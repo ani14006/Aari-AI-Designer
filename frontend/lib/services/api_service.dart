@@ -141,6 +141,9 @@ class ApiService {
     String? sareeColorHex,
     String lookStyle = 'Luxury Look',
     OrderDetails? orderDetails,
+    List<BeadRecommendation> beadRecommendations = const [],
+    List<PaletteOption> paletteOptions = const [],
+    int selectedPaletteIndex = 0,
   }) async {
     final response = await _dio.post(
       '/generation/visualize',
@@ -153,6 +156,10 @@ class ApiService {
         'look_style': lookStyle,
         if (orderDetails != null && !orderDetails.isEmpty)
           'order_details': orderDetails.toJson(),
+        'bead_recommendations':
+            beadRecommendations.map((b) => b.toJson()).toList(),
+        'palette_options': paletteOptions.map((p) => p.toJson()).toList(),
+        'selected_palette_index': selectedPaletteIndex,
       },
     );
     final started = DesignModel.fromJson(response.data as Map<String, dynamic>);

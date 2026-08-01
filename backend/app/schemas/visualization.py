@@ -7,7 +7,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from app.schemas.design import LookStyle, OrderDetails
+from app.schemas.design import BeadRecommendation, LookStyle, OrderDetails, PaletteOption
 
 
 class GarmentAnalysis(BaseModel):
@@ -78,9 +78,10 @@ class VisualizationJob(BaseModel):
 
 
 class VisualizationRequest(BaseModel):
-    """Request for the new edit-based visualization pipeline. Deliberately excludes
-    bead_recommendations/palette_options — those stay Design-Intelligence-only, unrelated to
-    faithfully rendering the given embroidery onto the given blouse."""
+    """Request for the new edit-based visualization pipeline. bead_recommendations/
+    palette_options are Design-Intelligence-only data (the user's palette pick from the
+    earlier /analysis/colors step) — never fed into the AI visualization pipeline itself, only
+    used to compute the shopping list/estimated cost alongside the generated image."""
 
     design_id: Optional[str] = None
     embroidery_design_url: str
@@ -89,3 +90,6 @@ class VisualizationRequest(BaseModel):
     saree_color_hex: Optional[str] = None
     look_style: LookStyle = LookStyle.LUXURY
     order_details: Optional[OrderDetails] = None
+    bead_recommendations: list[BeadRecommendation] = Field(default_factory=list)
+    palette_options: list[PaletteOption] = Field(default_factory=list)
+    selected_palette_index: int = 0

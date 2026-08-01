@@ -95,6 +95,36 @@ def test_visualize_returns_immediately_then_background_task_completes_it(mocked_
     assert design_body["embroidery_design_url"] == "https://cdn.example.com/embroidery.png"
 
 
+def test_visualize_computes_shopping_list_from_selected_palette(mocked_pipeline):
+    """The materials list must actually appear for designs made via /visualize — it was
+    silently never computed there (only the older /preview flow built it), even though the
+    frontend still runs the user through palette selection first."""
+    token = _make_token(uid="55555555-5555-5555-5555-555555555555", email="materials@example.com")
+
+    payload = _visualize_payload()
+    payload["bead_recommendations"] = [
+        {"name": "Antique Gold", "hex_color": "#C9A24B", "reason": "matches"},
+        {"name": "Pearl White", "hex_color": "#F5F5F0", "reason": "matches"},
+    ]
+    payload["palette_options"] = []
+    payload["selected_palette_index"] = 0
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/v1/generation/visualize",
+            json=payload,
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    # Available immediately (doesn't wait on the background task, since it's pure
+    # deterministic logic independent of the AI-generated image).
+    assert len(body["shopping_list"]) > 0
+    assert body["estimated_cost"] > 0
+    assert body["bead_recommendations"][0]["name"] == "Antique Gold"
+
+
 def test_regenerate_rejects_design_without_garment_metadata(mocked_pipeline):
     """A design created via the older /preview flow has no garment_metadata — regenerating
     it with the new pipeline must fail clearly (422), not silently do the wrong thing."""

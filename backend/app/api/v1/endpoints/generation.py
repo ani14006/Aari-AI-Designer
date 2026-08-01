@@ -264,6 +264,23 @@ async def visualize_design(
     design.status = "processing"
     design.error_message = None
 
+    # Design Intelligence data (palette pick from the earlier /analysis/colors step) — doesn't
+    # depend on the AI visualization pipeline finishing, so compute the materials list right
+    # away rather than waiting on the background task.
+    if payload.bead_recommendations:
+        design.bead_recommendations = [b.model_dump() for b in payload.bead_recommendations]
+        design.palette_options = [p.model_dump() for p in payload.palette_options]
+        design.selected_palette_index = payload.selected_palette_index
+        bust = payload.order_details.bust if payload.order_details else None
+        coverage = payload.order_details.embroidery_coverage.value if payload.order_details and payload.order_details.embroidery_coverage else None
+        budget = payload.order_details.budget if payload.order_details else None
+        shopping_list, estimated_cost = build_shopping_list(
+            payload.bead_recommendations, payload.look_style,
+            bust=bust, embroidery_coverage=coverage, budget=budget,
+        )
+        design.shopping_list = [item.model_dump() for item in shopping_list]
+        design.estimated_cost = estimated_cost
+
     await db.commit()
     await db.refresh(design)
 

@@ -295,6 +295,10 @@ class DesignFlowController extends StateNotifier<DesignFlowState> {
         sareeColorHex: state.sareeColorHex,
         lookStyle: state.lookStyle,
         orderDetails: state.orderDetails,
+        beadRecommendations:
+            palette?.beadRecommendations ?? state.beadRecommendations,
+        paletteOptions: state.paletteOptions,
+        selectedPaletteIndex: state.selectedPaletteIndex,
       );
       state = state.copyWith(isGenerating: false, result: design);
     } catch (e) {
