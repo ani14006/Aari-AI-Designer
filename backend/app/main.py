@@ -18,9 +18,10 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     configure_logging()
-    if not settings.is_production:
-        # Convenience for local dev; production environments should run Alembic migrations instead.
-        await init_models()
+    # No Alembic migrations exist yet in this project — create_all() is what provisions the
+    # schema in every environment, including production. It's idempotent (only creates tables
+    # that don't already exist), so this is safe to run on every startup.
+    await init_models()
     logger.info("%s started (environment=%s)", settings.APP_NAME, settings.ENVIRONMENT)
     yield
 
