@@ -1,0 +1,113 @@
+import 'package:flutter/material.dart';
+
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_theme.dart';
+import '../../models/palette_option.dart';
+
+/// One selectable palette option card: colour-theory scheme chip, title, description and
+/// a row of bead colour swatches.
+class PaletteOptionCard extends StatelessWidget {
+  final PaletteOption palette;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const PaletteOptionCard({
+    super.key,
+    required this.palette,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  Color _swatchColor(String hex) {
+    try {
+      return Color(int.parse('FF${hex.replaceFirst('#', '')}', radix: 16));
+    } catch (_) {
+      return AppColors.gold;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardTheme.color,
+          borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+          border: Border.all(
+              color: isSelected ? AppColors.roseGold : AppColors.borderLight,
+              width: isSelected ? 2 : 1),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                      color: AppColors.roseGold.withValues(alpha: 0.22),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                      spreadRadius: -4)
+                ]
+              : AppTheme.softShadow(context, strength: 0.6),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.roseGold.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    palette.scheme,
+                    style: const TextStyle(
+                        color: AppColors.roseGold,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11.5),
+                  ),
+                ),
+                const Spacer(),
+                Icon(
+                  isSelected
+                      ? Icons.check_circle_rounded
+                      : Icons.circle_outlined,
+                  color:
+                      isSelected ? AppColors.roseGold : AppColors.borderLight,
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(palette.title, style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 4),
+            Text(palette.description,
+                style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: 12),
+            Row(
+              children: palette.beadRecommendations
+                  .map((b) => Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: Tooltip(
+                          message: b.name,
+                          child: Container(
+                            height: 28,
+                            width: 28,
+                            decoration: BoxDecoration(
+                              color: _swatchColor(b.hexColor),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                  color: AppColors.borderLight, width: 1.5),
+                            ),
+                          ),
+                        ),
+                      ))
+                  .toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
