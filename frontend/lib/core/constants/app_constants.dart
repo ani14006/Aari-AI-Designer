@@ -1,20 +1,34 @@
+import '../config/runtime_config.dart';
+
 /// App-wide constants: API config, spacing scale, look styles.
 class AppConstants {
   AppConstants._();
 
   /// Base URL for the FastAPI backend. Override at build time with:
   /// flutter run --dart-define=API_BASE_URL=https://api.example.com/api/v1
-  static const String apiBaseUrl = String.fromEnvironment(
+  ///
+  /// In production (the Docker/nginx build), a runtime-injected value (see
+  /// core/config/runtime_config.dart) takes priority over this build-time default — Render
+  /// (and likely other Docker hosts) don't reliably pass dashboard env vars through as Docker
+  /// build args, so relying on --dart-define alone left this baked in as empty in production.
+  static const String _apiBaseUrlBuildTime = String.fromEnvironment(
     'API_BASE_URL',
     defaultValue: 'http://localhost:8000/api/v1',
   );
+  static String get apiBaseUrl =>
+      readRuntimeConfig('API_BASE_URL') ?? _apiBaseUrlBuildTime;
 
-  /// Supabase project URL + anon (public) key. Both are required at build/run time:
-  /// flutter run --dart-define=SUPABASE_URL=https://xxxx.supabase.co --dart-define=SUPABASE_ANON_KEY=ey...
-  /// Found in the Supabase dashboard under Project Settings -> API.
-  static const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-  static const String supabaseAnonKey =
+  /// Supabase project URL + anon (public) key. Found in the Supabase dashboard under Project
+  /// Settings -> API. Same runtime-injection priority as apiBaseUrl above.
+  static const String _supabaseUrlBuildTime =
+      String.fromEnvironment('SUPABASE_URL');
+  static String get supabaseUrl =>
+      readRuntimeConfig('SUPABASE_URL') ?? _supabaseUrlBuildTime;
+
+  static const String _supabaseAnonKeyBuildTime =
       String.fromEnvironment('SUPABASE_ANON_KEY');
+  static String get supabaseAnonKey =>
+      readRuntimeConfig('SUPABASE_ANON_KEY') ?? _supabaseAnonKeyBuildTime;
 
   /// External storefront the "Buy Materials" button on the Result screen opens.
   static const String materialsShopUrl =

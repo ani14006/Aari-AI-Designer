@@ -42,6 +42,9 @@
     For more details:
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
+  <!-- Must load before flutter_bootstrap.js — provides window.API_BASE_URL etc. that
+       core/config/runtime_config_web.dart reads. See frontend/env-config-entrypoint.sh. -->
+  <script src="env-config.js"></script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
