@@ -1,153 +1,229 @@
 # Aari AI Designer
 
-Premium AI-powered mobile app that lets women visualize Aari embroidery on a saree + blouse
-before a single stitch is made — upload a design, a saree, and a blouse, and get a
-photorealistic preview with AI-recommended bead colours and a ready-to-buy materials list.
+Premium AI-powered web app that lets women visualize Aari embroidery on a saree + blouse before
+a single stitch is made — upload an embroidery reference, a saree, and a blouse, and get a
+photorealistic boutique product photograph (the outfit shown worn on a display mannequin) with
+AI-recommended bead colours and a ready-to-buy materials list.
 
 ## Architecture
 
-Clean, modular, two-service architecture:
+Two independently deployable services:
 
 ```
 Aari-AI-Designer/
-├── backend/                  FastAPI (Python) — REST API, AI orchestration, persistence
+├── backend/                       FastAPI (Python) — REST API, AI orchestration, persistence
 │   └── app/
-│       ├── api/v1/endpoints/ Route handlers (auth, uploads, analysis, generation, designs, cart)
-│       ├── core/             Config, Supabase JWT verification, logging
-│       ├── db/                SQLAlchemy async engine/session, declarative base
-│       ├── models/           SQLAlchemy ORM models (User, Design, CartItem)
-│       ├── schemas/          Pydantic request/response contracts
-│       ├── services/         Gemini (vision + image gen), Cloudinary, shopping list logic
-│       └── utils/            Image helpers, domain exceptions
+│       ├── api/v1/endpoints/      Route handlers (auth, uploads, analysis, generation, mannequin, designs, cart)
+│       ├── core/                  Config, Supabase JWT verification, logging
+│       ├── db/                    SQLAlchemy async engine/session, declarative base
+│       ├── models/                SQLAlchemy ORM models (User, Design, CartItem)
+│       ├── schemas/                Pydantic request/response contracts
+│       ├── services/              Gemini (vision analysis + QA scoring), OpenAI (image generation),
+│       │                          Cloudinary, shopping list logic, visualization pipeline
+│       └── utils/                 Image helpers, domain exceptions
 │
-└── frontend/                 Flutter — luxury fashion UI, Riverpod state management
+└── frontend/                      Flutter web — luxury fashion UI, Riverpod state management
     └── lib/
-        ├── core/              Theme, network client, router, constants
-        ├── models/            Dart data classes (mirror backend schemas)
-        ├── services/          Supabase auth, API client, media pickers
-        ├── state/             Riverpod providers/controllers
-        ├── screens/           Splash, Auth, Home, Design, Result, History, Settings, Cart
-        └── widgets/           Reusable luxury UI components
+        ├── core/                  Theme, network client, router, constants
+        ├── models/                Dart data classes (mirror backend schemas)
+        ├── services/              Supabase auth, API client, media pickers, gallery download
+        ├── state/                 Riverpod providers/controllers
+        ├── screens/                Splash, Auth, Home, Design, Result, History, Settings, Cart
+        └── widgets/                Reusable luxury UI components
 ```
+
+The core visualization pipeline (`backend/app/services/openai_service.py` +
+`visualization_pipeline.py`) uses two AI providers for different jobs: **Gemini** analyses the
+uploaded garment and scores fidelity of the result, while **OpenAI**'s `gpt-image-1` does the
+actual image generation — composing the final photo from the uploaded blouse, saree and
+embroidery reference photos. Neither provider ever redesigns or reinterprets the embroidery;
+the reference photos are the source of truth throughout. "View on Mannequin"
+(`mannequin_service.py`) is a separate, optional post-processing step that re-presents an
+already-completed visualization on a display mannequin.
 
 ## Feature → implementation map
 
 | Feature | Where |
 |---|---|
-| Upload design / saree / blouse (camera, gallery, PDF, manual colour) | `frontend/lib/screens/design/design_screen.dart`, `backend/app/api/v1/endpoints/uploads.py` |
+| Upload embroidery / saree / blouse (camera, gallery, PDF, manual colour) | `frontend/lib/screens/design/design_screen.dart`, `backend/app/api/v1/endpoints/uploads.py` |
 | AI colour analysis + bead recommendations with reasoning | `backend/app/services/gemini_service.py::analyze_colors` |
-| Photorealistic AI preview generation | `backend/app/services/gemini_service.py::generate_preview_image` |
+| Boutique product photograph generation (blouse + saree + embroidery on a mannequin) | `backend/app/services/openai_service.py::generate_visualization`, `visualization_pipeline.py` |
+| "View on Mannequin" (re-present a finished visualization) | `backend/app/services/mannequin_service.py`, `POST /generation/mannequin` |
 | Regenerate (Luxury/Traditional/Minimal/Bridal/Temple/Modern) | `backend/app/api/v1/endpoints/generation.py`, `frontend/lib/widgets/result/look_style_selector.dart` |
 | Shopping list + estimated cost | `backend/app/services/shopping_list_service.py` |
-| Buy Materials (one-click cart) | `backend/app/api/v1/endpoints/cart.py`, `frontend/lib/screens/settings/cart_screen.dart` |
-| Save / Favourite / Download / Share | `frontend/lib/screens/result/result_screen.dart` |
+| Buy Materials | `frontend/lib/screens/result/result_screen.dart` (opens the external materials storefront) |
+| Save / Favourite / Download / Share via WhatsApp | `frontend/lib/screens/result/result_screen.dart` |
 | History | `backend/app/api/v1/endpoints/designs.py`, `frontend/lib/screens/history/history_screen.dart` |
 | Settings (dark mode, language, notifications, profile) | `frontend/lib/screens/settings/settings_screen.dart` |
 
-## Backend setup
+## Prerequisites
+
+- Python 3.9 (pinned in `backend/runtime.txt` / `backend/.python-version` — this is what the
+  project is tested against; newer 3.x will very likely work but hasn't been verified here)
+- Flutter SDK (stable channel) with web support enabled
+- Accounts/API keys for: [Supabase](https://supabase.com), [Cloudinary](https://cloudinary.com),
+  [Google AI Studio](https://aistudio.google.com) (Gemini), [OpenAI](https://platform.openai.com)
+  — all have the setup steps below
+
+## Clone
+
+```bash
+git clone https://github.com/ani14006/Aari-AI-Designer.git
+cd Aari-AI-Designer
+```
+
+## Backend — install, configure, run
 
 ```bash
 cd backend
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env   # fill in Supabase / Cloudinary / Gemini credentials
+cp .env.example .env   # then fill in the real values, see below
 uvicorn app.main:app --reload
 ```
 
+API docs are served at `http://localhost:8000/docs` once running, and a health check at
+`http://localhost:8000/health`.
+
+Run the test suite (30 tests, no real external services required — Supabase JWT verification is
+exercised with a self-signed token, and OpenAI/Gemini/Cloudinary calls are mocked):
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
+
+### Backend environment variables
+
+Every variable is listed with real placeholder shapes in `backend/.env.example`. The required
+ones (no working default):
+
+| Variable | Where to get it |
+|---|---|
+| `SUPABASE_URL`, `SUPABASE_JWT_SECRET` | Supabase dashboard → Project Settings → API |
+| `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Cloudinary dashboard |
+| `GEMINI_API_KEY` | [aistudio.google.com](https://aistudio.google.com) — billing required beyond the free tier's daily quota |
+| `OPENAI_API_KEY` | [platform.openai.com](https://platform.openai.com/api-keys) — billing required |
+
+Everything else in `.env.example` (`DATABASE_URL`, `CORS_ORIGINS`, `OPENAI_EDIT_QUALITY`,
+`VISUALIZATION_QA_ACCEPT_THRESHOLD`, etc.) has a working default and only needs overriding
+intentionally.
+
 - **Database**: defaults to local SQLite (`aiosqlite`) and auto-creates tables on startup —
-  there's no Alembic migration setup yet, so this same auto-create path runs in every
-  environment, including production. Point `DATABASE_URL` at PostgreSQL for anything beyond
-  local dev (SQLAlchemy's async engine supports both transparently via `asyncpg`).
-- **Supabase Auth**: set `SUPABASE_URL` and `SUPABASE_JWT_SECRET` from your Supabase project's
-  dashboard (Project Settings → API). The backend verifies access tokens locally by decoding
-  the JWT with this secret — no network call to Supabase needed per-request.
-- **Cloudinary**: set `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET`
-  from your Cloudinary dashboard.
-- **Gemini**: set `GEMINI_API_KEY` (billing required beyond the free tier's daily quota — see
-  [aistudio.google.com](https://aistudio.google.com)). Used for the vision-analysis half of the
-  pipeline: garment/colour analysis and QA-scoring generated visualizations.
-- **OpenAI**: set `OPENAI_API_KEY` (billing required). Used for the actual image generation —
-  `gpt-image-1`'s edit endpoint composes the final boutique visualization from the uploaded
-  blouse, saree and embroidery reference photos. Gemini has no viable image-generation offering
-  for this, so the two providers split the pipeline: Gemini sees and describes, OpenAI renders.
+  there's no Alembic migration setup, so this same auto-create path runs in every environment,
+  including production. Point `DATABASE_URL` at PostgreSQL for anything beyond local dev
+  (SQLAlchemy's async engine supports both transparently via `asyncpg`; use the
+  `postgresql+asyncpg://` prefix, not plain `postgresql://`).
+- **Supabase Auth**: the backend verifies access tokens locally by decoding the JWT with
+  `SUPABASE_JWT_SECRET` — no network call to Supabase needed per-request.
+- **Gemini**: vision-analysis half of the pipeline only — garment/colour analysis and
+  QA-scoring generated visualizations. Never generates images.
+- **OpenAI**: the actual image generation. `gpt-image-1`'s edit endpoint composes the final
+  boutique visualization from the uploaded blouse, saree and embroidery reference photos.
+  Gemini has no viable image-generation offering for this, so the two providers split the
+  pipeline: Gemini sees and describes, OpenAI renders.
 
-API docs are available at `http://localhost:8000/docs` once running. Run the test suite with
-`pytest` from `backend/` (install `requirements-dev.txt` first) — it exercises the full
-Supabase-JWT → local-user pipeline with a self-signed token, no real Supabase project required.
-
-## Frontend setup
+## Frontend — install, configure, run
 
 ```bash
 cd frontend
 flutter pub get
 
-flutter run --dart-define=API_BASE_URL=http://localhost:8000/api/v1 \
-            --dart-define=SUPABASE_URL=https://your-project-ref.supabase.co \
-            --dart-define=SUPABASE_ANON_KEY=your-anon-key
+flutter run -d chrome \
+  --dart-define=API_BASE_URL=http://localhost:8000/api/v1 \
+  --dart-define=SUPABASE_URL=https://your-project-ref.supabase.co \
+  --dart-define=SUPABASE_ANON_KEY=your-anon-key
 ```
+
+Production build (what `frontend/Dockerfile` runs):
+
+```bash
+flutter build web --release \
+  --dart-define=API_BASE_URL=https://your-deployed-backend/api/v1 \
+  --dart-define=SUPABASE_URL=https://your-project-ref.supabase.co \
+  --dart-define=SUPABASE_ANON_KEY=your-anon-key
+```
+
+Output is a static site in `frontend/build/web/` — servable by any static host or the included
+nginx-based Dockerfile.
+
+### Frontend environment variables
+
+Flutter web has no runtime `.env` loading — these are **build-time** `--dart-define` flags, not
+a file the app reads at startup. `frontend/.env.example` documents the same three values for
+reference:
+
+| Variable | Meaning |
+|---|---|
+| `API_BASE_URL` | Your backend's public URL, with the `/api/v1` prefix |
+| `SUPABASE_URL` | Same Supabase project as the backend |
+| `SUPABASE_ANON_KEY` | Supabase's public anon key (safe to expose client-side) |
 
 - **State management**: Riverpod (`flutter_riverpod`).
 - **Routing**: `go_router`, defined in `lib/core/router/app_router.dart`.
 - **Auth**: Supabase Authentication (email/password + Google Sign-In) via `supabase_flutter`;
   the backend verifies the Supabase access token on every request via
-  `app/core/supabase_auth.py`. No `flutterfire configure` step, no Firebase CLI login — just
-  a project URL and anon key, both safe to expose client-side.
-- Enable the Email and Google providers under Supabase → Authentication → Sign-in methods.
-- Point `API_BASE_URL` at your deployed backend for release builds.
+  `app/core/supabase_auth.py`. No Firebase CLI, no `flutterfire configure` — just a project URL
+  and anon key.
 
 ## Setting up Supabase
 
 1. Create a project at [supabase.com](https://supabase.com) (free tier is enough for dev).
 2. **Project Settings → API**: copy the *Project URL* and *anon/public key* → these go into the
-   frontend's `SUPABASE_URL` / `SUPABASE_ANON_KEY` dart-defines above.
+   frontend's `SUPABASE_URL` / `SUPABASE_ANON_KEY`.
 3. Same page, further down: copy the *JWT Secret* → this goes into the backend's
-   `SUPABASE_JWT_SECRET` in `.env`.
+   `SUPABASE_JWT_SECRET`.
 4. **Authentication → Providers**: enable *Email* and *Google*.
 
 No CLI login or interactive setup wizard required — everything above is copy-paste from the
 dashboard.
 
-## Deploying to Railway
+## Deployment
 
-The two services (`backend/`, `frontend/`) each carry their own `railway.json`, so this repo
-deploys as two separate Railway services pointed at the same GitHub repo with different root
-directories. Railway's filesystem is ephemeral — **do not** run the backend against the default
-SQLite file in production, it will be wiped on every redeploy/restart. Use Railway's Postgres
-plugin instead; the backend already supports it via `DATABASE_URL` (`asyncpg` is in
-`requirements.txt`), no code changes needed.
+Both `render.yaml` (repo root) and `backend/railway.json` + `frontend/railway.json` are checked
+in — pick whichever platform you prefer. Either way, the shape is the same: two services (one
+Python, one Docker) plus a managed Postgres database, since **the platform's filesystem is
+ephemeral** — do not run the backend against the default SQLite file in production, it will be
+wiped on every redeploy/restart.
 
-**1. Database**: In your Railway project, click *New → Database → Add PostgreSQL*. Railway
-provisions it and exposes a `DATABASE_URL` — copy it (or reference it directly, see step 2).
+### Render (one-click via Blueprint)
 
-**2. Backend service**: *New → GitHub Repo* → select this repo → in service *Settings*, set
-**Root Directory** to `backend`. It builds via Nixpacks (auto-detects `requirements.txt`) and
-starts via `backend/railway.json`'s `startCommand`. Under *Variables*, set everything from
-`backend/.env.example` — most importantly:
-- `DATABASE_URL` — the Postgres connection string from step 1, with the `postgresql://` prefix
-  changed to `postgresql+asyncpg://` (SQLAlchemy's async driver needs the explicit dialect)
-- `ENVIRONMENT=production`
-- `SUPABASE_URL`, `SUPABASE_JWT_SECRET`, `CLOUDINARY_*`, `GEMINI_API_KEY`, `OPENAI_API_KEY` — the
-  same real values from your local `backend/.env`
-- `CORS_ORIGINS` — once the frontend service has a URL (step 3), set this to
-  `["https://your-frontend-service.up.railway.app"]` instead of the permissive dev default
+1. In the Render dashboard: **New → Blueprint**, point it at this repo. Render reads
+   `render.yaml` and provisions the backend web service, the frontend Docker service, and a
+   managed Postgres database in one go.
+2. Fill in the secrets Render leaves blank (`sync: false` in `render.yaml`): `DATABASE_URL`
+   (take Render's Postgres "Internal Connection String" and change its `postgresql://` prefix
+   to `postgresql+asyncpg://`), `SUPABASE_URL`, `SUPABASE_JWT_SECRET`, `CLOUDINARY_*`,
+   `GEMINI_API_KEY`, `OPENAI_API_KEY` on the backend service, and `API_BASE_URL`,
+   `SUPABASE_URL`, `SUPABASE_ANON_KEY` on the frontend service (as **build-time** variables —
+   Flutter web bakes these in at build, not runtime).
+3. Once both services have URLs, set the backend's `CORS_ORIGINS` to the frontend's actual URL
+   and redeploy the backend.
 
-Once deployed, note the backend's public URL (Settings → Networking → Generate Domain if not
-already assigned) — the frontend needs it next.
+### Railway
 
-**3. Frontend service**: *New → GitHub Repo* → same repo again → **Root Directory** set to
-`frontend`. It builds via the Dockerfile (multi-stage: compiles Flutter web, serves via nginx).
-Flutter web bakes config in at *build* time, not runtime, so these three variables must be set
-as **build-time variables** on this service (Railway's Dockerfile builds pass matching
-`ARG`-declared variables through automatically — check your dashboard's Variables tab for a
-build-time toggle if it isn't automatic):
-- `API_BASE_URL` — the backend's public URL from step 2, plus `/api/v1`
-- `SUPABASE_URL`, `SUPABASE_ANON_KEY` — same Supabase project as the backend
+1. **New → Database → Add PostgreSQL** in your Railway project.
+2. **New → GitHub Repo** → this repo → service *Settings* → **Root Directory**: `backend`. It
+   builds via Nixpacks (auto-detects `requirements.txt`) and starts via `backend/railway.json`.
+   Set the same variables as the Render backend service above under *Variables*.
+3. **New → GitHub Repo** → this repo again → **Root Directory**: `frontend`. It builds via
+   `frontend/Dockerfile` (multi-stage: compiles Flutter web, serves via nginx listening on
+   Railway's dynamic `$PORT`). Set `API_BASE_URL`, `SUPABASE_URL`, `SUPABASE_ANON_KEY` as
+   **build-time** variables (check your dashboard's Variables tab for a build-time toggle if
+   Railway doesn't pass matching `ARG`s through automatically).
+4. Once both are deployed, set the backend's `CORS_ORIGINS` to the frontend's actual Railway URL
+   and redeploy the backend.
 
-After both are deployed, go back to the backend's `CORS_ORIGINS` variable and set it to the
-frontend's actual Railway URL, then redeploy the backend so browser requests aren't blocked.
+### Fly.io / DigitalOcean App Platform / other standard hosts
+
+The same two-service shape applies: run the backend with `backend/Procfile`'s command
+(`uvicorn app.main:app --host 0.0.0.0 --port $PORT`) against a Postgres `DATABASE_URL`, and
+build/serve the frontend via `frontend/Dockerfile`. Both are platform-agnostic — nothing here is
+Render- or Railway-specific beyond the two `railway.json` files and `render.yaml`, which
+unrelated platforms simply ignore.
 
 ## Tech stack
 
-Flutter · FastAPI · SQLAlchemy (async) · SQLite (dev) / PostgreSQL (prod) · Supabase Auth ·
-Cloudinary · Google Gemini (vision analysis + QA scoring) · OpenAI `gpt-image-1` (image
-generation) · Riverpod · go_router
+Flutter (web) · FastAPI · SQLAlchemy (async) · SQLite (dev) / PostgreSQL (prod) · Supabase Auth
+· Cloudinary · Google Gemini (vision analysis + QA scoring) · OpenAI `gpt-image-1` (image
+generation) · Riverpod · go_router · nginx (frontend container)

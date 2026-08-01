@@ -6,7 +6,13 @@ backend/**/__pycache__/
 backend/*.db
 backend/.env
 backend/firebase-service-account.json
+backend/.pytest_cache/
 *.pyc
+*.pyo
+__pycache__/
+*.egg-info/
+.coverage
+htmlcov/
 
 # --- Frontend (Flutter) ---
 frontend/.dart_tool/
@@ -28,3 +34,4 @@ frontend/.env
 
 # --- Stray root-level artifacts (not part of the app) ---
 node_modules/
+*.class

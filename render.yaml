@@ -1,0 +1,68 @@
+# Render Blueprint — https://render.com/docs/blueprint-spec
+# Deploys both services from this one repo. Field names here match the Blueprint spec at the
+# time this was written; Render's UI will flag anything it no longer recognizes on import, in
+# which case check https://render.com/docs/blueprint-spec for the current schema.
+#
+# Secrets (sync: false) must be filled in manually in the Render dashboard after the first
+# blueprint sync — they are deliberately not stored in this file.
+
+services:
+  - type: web
+    name: aari-ai-designer-backend
+    env: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: CORS_ORIGINS
+        # Tighten to the frontend service's actual URL once it's deployed, e.g.
+        # ["https://aari-ai-designer-frontend.onrender.com"]
+        value: '["*"]'
+      - key: SECRET_KEY
+        generateValue: true
+      # Render's managed Postgres "Internal Connection String" is postgresql://... — SQLAlchemy's
+      # async engine needs the explicit asyncpg dialect, so paste it in with the prefix changed
+      # to postgresql+asyncpg://... rather than linking this via fromDatabase.
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+
+  - type: web
+    name: aari-ai-designer-frontend
+    env: docker
+    rootDir: frontend
+    dockerfilePath: ./Dockerfile
+    plan: free
+    envVars:
+      # Flutter web bakes these in at build time (see frontend/Dockerfile's ARGs) — Render must
+      # be configured to pass these as Docker build arguments, not just runtime env vars.
+      - key: API_BASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+
+databases:
+  - name: aari-ai-designer-db
+    plan: free
+    databaseName: aari_ai_designer
+    user: aari_ai_designer
