@@ -67,6 +67,14 @@ class Design(Base, TimestampMixin):
     # the original preview_image_url above is never overwritten by this feature.
     mannequin_image_url: Mapped[Optional[str]] = mapped_column(String(1024), nullable=True, default=None)
 
+    # Visualization generation runs as a background task (real generation takes 1-5 minutes,
+    # too long for a single synchronous HTTP request to survive most hosting platforms' proxy
+    # timeouts) — the frontend polls GET /designs/{id} and watches this field. "completed" for
+    # every design created via the old synchronous /preview flow, since those never go through
+    # the pending/processing states at all.
+    status: Mapped[str] = mapped_column(String(16), default="completed")
+    error_message: Mapped[Optional[str]] = mapped_column(String(2048), nullable=True, default=None)
+
     owner: Mapped["User"] = relationship(back_populates="designs")
 
 

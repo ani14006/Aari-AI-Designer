@@ -127,6 +127,12 @@ class ApiService {
   /// itself — no manual placement step. Requires an actual blouse photo (blouseImageUrl) —
   /// unlike generatePreview, there's no hex-colour fallback, since the edit pipeline needs a
   /// real base image to edit.
+  ///
+  /// The backend runs the actual generation (1-5 minutes: background removal + garment
+  /// analysis + up to 2 rounds of image generation + QA scoring) as a background task rather
+  /// than holding the HTTP request open — that reliably exceeded hosting platforms' reverse-
+  /// proxy timeouts in production. This method polls GET /designs/{id} until it's done, so
+  /// callers still just get a single completed (or failed) DesignModel back, same as before.
   Future<DesignModel> visualize({
     String? designId,
     required String embroideryDesignUrl,
@@ -148,22 +154,41 @@ class ApiService {
         if (orderDetails != null && !orderDetails.isEmpty)
           'order_details': orderDetails.toJson(),
       },
-      // The edit pipeline can run background removal + garment analysis + up to 2 rounds of
-      // image generation and QA scoring — comfortably longer than the app's default 90s
-      // receive timeout meant for the older single-call text-to-image flow.
-      options: Options(receiveTimeout: const Duration(minutes: 4)),
     );
-    return DesignModel.fromJson(response.data as Map<String, dynamic>);
+    final started = DesignModel.fromJson(response.data as Map<String, dynamic>);
+    return _pollUntilComplete(started.id);
   }
 
+  /// Same background-task + polling contract as [visualize] above.
   Future<DesignModel> regenerate(String designId, String lookStyle) async {
     final response = await _dio.post(
       '/generation/regenerate/$designId',
       queryParameters: {'look_style': lookStyle},
-      // Same reasoning as visualize() above — regenerate now runs the same edit pipeline.
-      options: Options(receiveTimeout: const Duration(minutes: 4)),
     );
-    return DesignModel.fromJson(response.data as Map<String, dynamic>);
+    final started = DesignModel.fromJson(response.data as Map<String, dynamic>);
+    return _pollUntilComplete(started.id);
+  }
+
+  static const _pollInterval = Duration(seconds: 4);
+  static const _pollTimeout = Duration(minutes: 8);
+
+  /// Polls GET /designs/{id} until its status leaves "processing". Used by [visualize] and
+  /// [regenerate], both of which return immediately with a "processing" design while the
+  /// actual generation runs as a background task on the backend.
+  Future<DesignModel> _pollUntilComplete(String designId) async {
+    final deadline = DateTime.now().add(_pollTimeout);
+    while (DateTime.now().isBefore(deadline)) {
+      await Future.delayed(_pollInterval);
+      final design = await getDesign(designId);
+      if (design.isProcessing) continue;
+      if (design.isFailed) {
+        throw ApiException(
+            design.errorMessage ?? 'Generation failed. Please try again.');
+      }
+      return design;
+    }
+    throw ApiException(
+        'This is taking longer than expected. Check History in a few minutes — it may still complete in the background.');
   }
 
   // ---- Designs / history ----

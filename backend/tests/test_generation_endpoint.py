@@ -62,7 +62,11 @@ def _visualize_payload() -> dict:
     }
 
 
-def test_visualize_creates_design_with_visualization_fields(mocked_pipeline):
+def test_visualize_returns_immediately_then_background_task_completes_it(mocked_pipeline):
+    """/visualize must return right away with status="processing" — real generation runs as a
+    background task rather than blocking the request (see generation.py's module docstring for
+    why: it exceeds most hosting platforms' reverse-proxy timeouts if held open synchronously).
+    The frontend polls GET /designs/{id} afterwards, which is what this test does too."""
     token = _make_token()
 
     with TestClient(app) as client:
@@ -71,14 +75,24 @@ def test_visualize_creates_design_with_visualization_fields(mocked_pipeline):
             json=_visualize_payload(),
             headers={"Authorization": f"Bearer {token}"},
         )
+        assert response.status_code == 200, response.text
+        body = response.json()
+        assert body["status"] == "processing"
+        assert body["preview_image_url"] == ""
+        design_id = body["id"]
 
-    assert response.status_code == 200, response.text
-    body = response.json()
-    assert body["preview_image_url"] == "https://cdn.example.com/visualization.png"
-    assert body["garment_metadata"]["blouse_color"] == "maroon"
-    assert body["qa_result"]["overall_score"] == 90
-    assert body["retry_count"] == 0
-    assert body["embroidery_design_url"] == "https://cdn.example.com/embroidery.png"
+        design_response = client.get(
+            f"/api/v1/designs/{design_id}", headers={"Authorization": f"Bearer {token}"},
+        )
+
+    assert design_response.status_code == 200, design_response.text
+    design_body = design_response.json()
+    assert design_body["status"] == "completed"
+    assert design_body["preview_image_url"] == "https://cdn.example.com/visualization.png"
+    assert design_body["garment_metadata"]["blouse_color"] == "maroon"
+    assert design_body["qa_result"]["overall_score"] == 90
+    assert design_body["retry_count"] == 0
+    assert design_body["embroidery_design_url"] == "https://cdn.example.com/embroidery.png"
 
 
 def test_regenerate_rejects_design_without_garment_metadata(mocked_pipeline):

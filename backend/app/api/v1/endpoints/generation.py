@@ -1,13 +1,24 @@
-"""Core AI image generation endpoints: initial preview + one-click regeneration in a new look style."""
+"""Core AI image generation endpoints: initial preview + one-click regeneration in a new look style.
+
+The reference-image-faithful visualization pipeline (/visualize, /regenerate) runs as a
+background task rather than blocking the HTTP request — real generation takes 1-5 minutes
+(background removal + Gemini analysis + up to 2 rounds of OpenAI image generation + QA
+scoring), which exceeds the reverse-proxy timeout on most hosting platforms' free/default
+tiers if held open as a single synchronous request (confirmed in production: Render was
+killing the connection before OpenAI finished). The endpoint creates the Design row
+immediately with status="processing" and returns right away; the frontend polls
+GET /designs/{id} and watches `status` until it's "completed" or "failed".
+"""
 import base64
+import logging
 from typing import Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, BackgroundTasks, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
-from app.db.session import get_db
+from app.db.session import AsyncSessionLocal, get_db
 from app.models.design import Design
 from app.models.user import User
 from app.schemas.design import (
@@ -22,6 +33,8 @@ from app.schemas.visualization import VisualizationJob, VisualizationRequest
 from app.services import cloudinary_service, gemini_service, openai_service, visualization_pipeline
 from app.services.shopping_list_service import build_shopping_list
 from app.utils.exceptions import NotFoundError, ValidationError
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/generation", tags=["generation"])
 
@@ -44,6 +57,7 @@ async def _generate_and_persist(
     selected_palette_index: int = 0,
     order_details: Optional[OrderDetails] = None,
 ) -> Design:
+    """Older text-to-image flow — a single OpenAI call, fast enough to stay synchronous."""
     image_bytes, prompt_used = await openai_service.generate_preview_image(
         embroidery_design_url=embroidery_design_url,
         blouse_image_url=blouse_image_url,
@@ -104,25 +118,19 @@ async def _generate_and_persist(
     design.generation_prompt = prompt_used
     design.shopping_list = [item.model_dump() for item in shopping_list]
     design.estimated_cost = estimated_cost
+    design.status = "completed"
 
     await db.commit()
     await db.refresh(design)
     return design
 
 
-async def _persist_visualization(
-    db: AsyncSession,
-    user: User,
-    design: Optional[Design],
-    job: VisualizationJob,
-    order_details: Optional[OrderDetails] = None,
-) -> Design:
+def _apply_visualization_result(
+    design: Design, job: VisualizationJob, preview_url: str, order_details: Optional[OrderDetails] = None
+) -> None:
+    """Copies a completed VisualizationJob's chosen attempt onto `design`. Does not commit —
+    callers persist alongside setting `status`."""
     chosen = job.chosen_attempt
-    upload = await cloudinary_service.upload_bytes(chosen.image_bytes, folder="visualizations")
-
-    if design is None:
-        design = Design(owner_id=user.id)
-        db.add(design)
 
     design.embroidery_design_url = job.embroidery_design_url
     design.saree_image_url = job.saree_image_url or ""
@@ -151,20 +159,79 @@ async def _persist_visualization(
         design.style_preference = order_details.style_preference or design.style_preference
 
     design.look_style = job.look_style.value
-    design.preview_image_url = upload.url
+    design.preview_image_url = preview_url
     design.generation_prompt = job.prompt or ""
     design.garment_metadata = job.garment.model_dump()
     design.qa_result = chosen.qa.model_dump()
     design.retry_count = job.retry_count
 
-    await db.commit()
-    await db.refresh(design)
-    return design
+
+async def _run_visualization_background(design_id: str, user_id: str, payload: VisualizationRequest) -> None:
+    """Runs the full visualization pipeline and persists the result, using its own DB session
+    since the request-scoped one is already closed by the time a background task executes."""
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(select(Design).where(Design.id == design_id, Design.owner_id == user_id))
+        design = result.scalar_one_or_none()
+        if design is None:
+            return  # deleted mid-flight — nothing to persist to
+
+        try:
+            job = VisualizationJob(
+                design_id=design_id,
+                embroidery_design_url=payload.embroidery_design_url,
+                blouse_image_url=payload.blouse_image_url,
+                saree_image_url=payload.saree_image_url,
+                saree_color_hex=payload.saree_color_hex,
+                look_style=payload.look_style,
+            )
+            job = await visualization_pipeline.run_visualization(job)
+            upload = await cloudinary_service.upload_bytes(job.chosen_attempt.image_bytes, folder="visualizations")
+
+            _apply_visualization_result(design, job, upload.url, order_details=payload.order_details)
+            design.status = "completed"
+            design.error_message = None
+            await db.commit()
+        except Exception as exc:
+            logger.exception("Background visualization failed for design %s", design_id)
+            design.status = "failed"
+            design.error_message = str(exc)[:2048]
+            await db.commit()
+
+
+async def _run_regenerate_background(design_id: str, user_id: str, look_style: LookStyle) -> None:
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(select(Design).where(Design.id == design_id, Design.owner_id == user_id))
+        design = result.scalar_one_or_none()
+        if design is None:
+            return
+
+        try:
+            job = VisualizationJob(
+                design_id=design.id,
+                embroidery_design_url=design.embroidery_design_url,
+                blouse_image_url=design.blouse_image_url,
+                saree_image_url=design.saree_image_url or None,
+                saree_color_hex=design.saree_color_hex or None,
+                look_style=look_style,
+            )
+            job = await visualization_pipeline.run_visualization(job)
+            upload = await cloudinary_service.upload_bytes(job.chosen_attempt.image_bytes, folder="visualizations")
+
+            _apply_visualization_result(design, job, upload.url)
+            design.status = "completed"
+            design.error_message = None
+            await db.commit()
+        except Exception as exc:
+            logger.exception("Background regenerate failed for design %s", design_id)
+            design.status = "failed"
+            design.error_message = str(exc)[:2048]
+            await db.commit()
 
 
 @router.post("/visualize", response_model=DesignRead)
 async def visualize_design(
     payload: VisualizationRequest,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> Design:
@@ -172,7 +239,10 @@ async def visualize_design(
     stitched onto their exact uploaded blouse. The model decides placement, scale and
     orientation itself — there's no manual placement step. Independent of the Design
     Intelligence colour/shopping-list pipeline (bead_recommendations/palette_options are
-    untouched by this endpoint)."""
+    untouched by this endpoint).
+
+    Returns immediately with status="processing" — the actual generation runs in the
+    background. Poll GET /designs/{id} until status is "completed" or "failed"."""
     design = None
     if payload.design_id:
         result = await db.execute(
@@ -182,17 +252,26 @@ async def visualize_design(
         if design is None:
             raise NotFoundError("Design not found")
 
-    job = VisualizationJob(
-        design_id=payload.design_id,
-        embroidery_design_url=payload.embroidery_design_url,
-        blouse_image_url=payload.blouse_image_url,
-        saree_image_url=payload.saree_image_url,
-        saree_color_hex=payload.saree_color_hex,
-        look_style=payload.look_style,
-    )
-    job = await visualization_pipeline.run_visualization(job)
+    if design is None:
+        design = Design(owner_id=user.id)
+        db.add(design)
 
-    return await _persist_visualization(db, user, design, job, order_details=payload.order_details)
+    design.embroidery_design_url = payload.embroidery_design_url
+    design.blouse_image_url = payload.blouse_image_url
+    design.saree_image_url = payload.saree_image_url or design.saree_image_url or ""
+    design.saree_color_hex = payload.saree_color_hex or design.saree_color_hex or ""
+    design.look_style = payload.look_style.value
+    design.status = "processing"
+    design.error_message = None
+
+    await db.commit()
+    await db.refresh(design)
+
+    background_tasks.add_task(
+        _run_visualization_background, design_id=design.id, user_id=user.id, payload=payload,
+    )
+
+    return design
 
 
 @router.post("/preview", response_model=DesignRead)
@@ -207,6 +286,9 @@ async def generate_preview(
     palette options, and sends that palette's beads here alongside `palette_options` (all 3, for
     history/display) and `selected_palette_index`. If `bead_recommendations` is omitted entirely
     (e.g. a direct API call), analysis runs here and the first (Complementary) palette is used.
+
+    Unlike /visualize, this stays synchronous — a single OpenAI text-to-image call is fast
+    enough to not need the background-task treatment.
     """
     bead_recommendations = payload.bead_recommendations
     palette_options = payload.palette_options
@@ -265,6 +347,7 @@ async def generate_preview(
 async def regenerate_preview(
     design_id: str,
     look_style: LookStyle,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> Design:
@@ -275,7 +358,8 @@ async def regenerate_preview(
     Requires the design to carry saved `garment_metadata` (i.e. it was created via /visualize).
     Designs from the older /preview flow have no garment analysis to reuse; regenerating one of
     those raises a 422 rather than silently falling back to text-to-image generation.
-    """
+
+    Returns immediately with status="processing", same polling contract as /visualize."""
     result = await db.execute(select(Design).where(Design.id == design_id, Design.owner_id == user.id))
     design = result.scalar_one_or_none()
     if design is None:
@@ -287,14 +371,15 @@ async def regenerate_preview(
             "regenerated with it — create a new design instead."
         )
 
-    job = VisualizationJob(
-        design_id=design.id,
-        embroidery_design_url=design.embroidery_design_url,
-        blouse_image_url=design.blouse_image_url,
-        saree_image_url=design.saree_image_url or None,
-        saree_color_hex=design.saree_color_hex or None,
-        look_style=look_style,
-    )
-    job = await visualization_pipeline.run_visualization(job)
+    design.status = "processing"
+    design.error_message = None
+    design.look_style = look_style.value
 
-    return await _persist_visualization(db, user, design, job)
+    await db.commit()
+    await db.refresh(design)
+
+    background_tasks.add_task(
+        _run_regenerate_background, design_id=design.id, user_id=user.id, look_style=look_style,
+    )
+
+    return design

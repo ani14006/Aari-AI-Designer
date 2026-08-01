@@ -188,6 +188,8 @@ class DesignRead(BaseModel):
     qa_result: Optional[dict] = None
     retry_count: int = 0
     mannequin_image_url: Optional[str] = None
+    status: str = "completed"
+    error_message: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

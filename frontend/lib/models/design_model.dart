@@ -43,6 +43,13 @@ class DesignModel {
   final QaResult? qaResult;
   final int retryCount;
 
+  /// "processing" while the background generation task is still running (poll GET
+  /// /designs/{id} until this changes), "completed" once previewImageUrl is ready, or
+  /// "failed" (see errorMessage). Always "completed" for designs made via the older
+  /// synchronous /preview flow, which never goes through the other two states.
+  final String status;
+  final String? errorMessage;
+
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -80,9 +87,14 @@ class DesignModel {
     this.garmentMetadata,
     this.qaResult,
     this.retryCount = 0,
+    this.status = 'completed',
+    this.errorMessage,
     required this.createdAt,
     required this.updatedAt,
   });
+
+  bool get isProcessing => status == 'processing';
+  bool get isFailed => status == 'failed';
 
   factory DesignModel.fromJson(Map<String, dynamic> json) {
     return DesignModel(
@@ -130,6 +142,8 @@ class DesignModel {
           ? QaResult.fromJson(json['qa_result'] as Map<String, dynamic>)
           : null,
       retryCount: json['retry_count'] as int? ?? 0,
+      status: json['status'] as String? ?? 'completed',
+      errorMessage: json['error_message'] as String?,
       createdAt: DateTime.tryParse(json['created_at'] as String? ?? '') ??
           DateTime.now(),
       updatedAt: DateTime.tryParse(json['updated_at'] as String? ?? '') ??
@@ -172,6 +186,8 @@ class DesignModel {
       garmentMetadata: garmentMetadata,
       qaResult: qaResult,
       retryCount: retryCount,
+      status: status,
+      errorMessage: errorMessage,
       createdAt: createdAt,
       updatedAt: updatedAt,
     );
