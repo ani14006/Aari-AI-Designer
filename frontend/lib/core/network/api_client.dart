@@ -10,9 +10,12 @@ class ApiClient {
     _dio = Dio(
       BaseOptions(
         baseUrl: AppConstants.apiBaseUrl,
-        connectTimeout: const Duration(seconds: 30),
-        receiveTimeout:
-            const Duration(seconds: 90), // AI generation calls can take a while
+        // Free-tier hosts (Render, etc.) spin the backend down after inactivity — Render's own
+        // dashboard warns waking it back up "can delay requests by 50 seconds or more". 30s
+        // wasn't enough margin and caused spurious connection timeouts on the first request
+        // after idling.
+        connectTimeout: const Duration(seconds: 90),
+        receiveTimeout: const Duration(seconds: 90),
         sendTimeout: const Duration(seconds: 60),
       ),
     );
