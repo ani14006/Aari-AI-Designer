@@ -21,16 +21,29 @@ class UploadPickerService {
 
   final ImagePicker _imagePicker = ImagePicker();
 
+  // Caps resolution at what the backend actually uses (it downsizes everything to a max
+  // dimension of 2048px before passing images to any AI service) — sending full 12MP+ camera
+  // photos wastes upload time on bytes the backend throws away anyway.
+  static const double _maxUploadDimension = 2048;
+
   Future<PickedAsset?> pickFromCamera() async {
     final image = await _imagePicker.pickImage(
-        source: ImageSource.camera, imageQuality: 92);
+      source: ImageSource.camera,
+      imageQuality: 92,
+      maxWidth: _maxUploadDimension,
+      maxHeight: _maxUploadDimension,
+    );
     if (image == null) return null;
     return PickedAsset(bytes: await image.readAsBytes(), fileName: image.name);
   }
 
   Future<PickedAsset?> pickFromGallery() async {
     final image = await _imagePicker.pickImage(
-        source: ImageSource.gallery, imageQuality: 92);
+      source: ImageSource.gallery,
+      imageQuality: 92,
+      maxWidth: _maxUploadDimension,
+      maxHeight: _maxUploadDimension,
+    );
     if (image == null) return null;
     return PickedAsset(bytes: await image.readAsBytes(), fileName: image.name);
   }

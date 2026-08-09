@@ -23,7 +23,9 @@ class DesignFlowState {
   final Uint8List? blousePreviewBytes;
   final String? blouseColorHex;
 
-  final bool isUploading;
+  final bool isUploadingEmbroidery;
+  final bool isUploadingSaree;
+  final bool isUploadingBlouse;
   final bool isAnalyzing;
   final bool isGenerating;
   final String? error;
@@ -49,7 +51,9 @@ class DesignFlowState {
     this.blouseImageUrl,
     this.blousePreviewBytes,
     this.blouseColorHex,
-    this.isUploading = false,
+    this.isUploadingEmbroidery = false,
+    this.isUploadingSaree = false,
+    this.isUploadingBlouse = false,
     this.isAnalyzing = false,
     this.isGenerating = false,
     this.error,
@@ -79,6 +83,9 @@ class DesignFlowState {
   /// model itself — no manual placement step.
   bool get canVisualize => canGenerate && hasBlousePhoto;
 
+  bool get isUploading =>
+      isUploadingEmbroidery || isUploadingSaree || isUploadingBlouse;
+
   bool get isBusy => isUploading || isAnalyzing || isGenerating;
 
   PaletteOption? get selectedPalette => paletteOptions.isEmpty
@@ -95,7 +102,9 @@ class DesignFlowState {
     String? blouseImageUrl,
     Uint8List? blousePreviewBytes,
     String? blouseColorHex,
-    bool? isUploading,
+    bool? isUploadingEmbroidery,
+    bool? isUploadingSaree,
+    bool? isUploadingBlouse,
     bool? isAnalyzing,
     bool? isGenerating,
     String? error,
@@ -120,7 +129,10 @@ class DesignFlowState {
       blouseImageUrl: blouseImageUrl ?? this.blouseImageUrl,
       blousePreviewBytes: blousePreviewBytes ?? this.blousePreviewBytes,
       blouseColorHex: blouseColorHex ?? this.blouseColorHex,
-      isUploading: isUploading ?? this.isUploading,
+      isUploadingEmbroidery:
+          isUploadingEmbroidery ?? this.isUploadingEmbroidery,
+      isUploadingSaree: isUploadingSaree ?? this.isUploadingSaree,
+      isUploadingBlouse: isUploadingBlouse ?? this.isUploadingBlouse,
       isAnalyzing: isAnalyzing ?? this.isAnalyzing,
       isGenerating: isGenerating ?? this.isGenerating,
       error: clearError ? null : (error ?? this.error),
@@ -144,22 +156,22 @@ class DesignFlowController extends StateNotifier<DesignFlowState> {
 
   Future<void> uploadEmbroideryDesign(PickedAsset asset) async {
     state = state.copyWith(
-        isUploading: true,
+        isUploadingEmbroidery: true,
         clearError: true,
         embroideryPreviewBytes: asset.bytes);
     try {
       final result =
           await _api.uploadImage(asset.bytes, asset.fileName, 'designs');
-      state =
-          state.copyWith(isUploading: false, embroideryDesignUrl: result.url);
+      state = state.copyWith(
+          isUploadingEmbroidery: false, embroideryDesignUrl: result.url);
     } catch (e) {
-      state = state.copyWith(isUploading: false, error: e.toString());
+      state = state.copyWith(isUploadingEmbroidery: false, error: e.toString());
     }
   }
 
   Future<void> uploadSareeImage(PickedAsset asset) async {
     state = state.copyWith(
-      isUploading: true,
+      isUploadingSaree: true,
       clearError: true,
       sareePreviewBytes: asset.bytes,
       sareeColorHex: '',
@@ -167,9 +179,10 @@ class DesignFlowController extends StateNotifier<DesignFlowState> {
     try {
       final result =
           await _api.uploadImage(asset.bytes, asset.fileName, 'sarees');
-      state = state.copyWith(isUploading: false, sareeImageUrl: result.url);
+      state =
+          state.copyWith(isUploadingSaree: false, sareeImageUrl: result.url);
     } catch (e) {
-      state = state.copyWith(isUploading: false, error: e.toString());
+      state = state.copyWith(isUploadingSaree: false, error: e.toString());
     }
   }
 
@@ -183,7 +196,7 @@ class DesignFlowController extends StateNotifier<DesignFlowState> {
 
   Future<void> uploadBlouseImage(PickedAsset asset) async {
     state = state.copyWith(
-      isUploading: true,
+      isUploadingBlouse: true,
       clearError: true,
       blousePreviewBytes: asset.bytes,
       blouseColorHex: '',
@@ -191,9 +204,10 @@ class DesignFlowController extends StateNotifier<DesignFlowState> {
     try {
       final result =
           await _api.uploadImage(asset.bytes, asset.fileName, 'blouses');
-      state = state.copyWith(isUploading: false, blouseImageUrl: result.url);
+      state =
+          state.copyWith(isUploadingBlouse: false, blouseImageUrl: result.url);
     } catch (e) {
-      state = state.copyWith(isUploading: false, error: e.toString());
+      state = state.copyWith(isUploadingBlouse: false, error: e.toString());
     }
   }
 

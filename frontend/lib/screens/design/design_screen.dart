@@ -110,8 +110,7 @@ class DesignScreen extends ConsumerWidget {
                   placeholderIcon: Icons.brush_rounded,
                   previewBytes: state.embroideryPreviewBytes,
                   previewUrl: state.embroideryDesignUrl,
-                  isUploading:
-                      state.isUploading && state.embroideryDesignUrl == null,
+                  isUploading: state.isUploadingEmbroidery,
                   onTap: () => _handleDesignUpload(context, ref),
                 ),
                 const SizedBox(height: 14),
@@ -122,9 +121,7 @@ class DesignScreen extends ConsumerWidget {
                   previewBytes: state.sareePreviewBytes,
                   previewUrl: state.sareeImageUrl,
                   colorSwatch: _hexToColor(state.sareeColorHex),
-                  isUploading: state.isUploading &&
-                      (state.sareeImageUrl == null &&
-                          state.sareeColorHex == null),
+                  isUploading: state.isUploadingSaree,
                   onTap: () => _handleSareeUpload(context, ref),
                 ),
                 const SizedBox(height: 14),
@@ -135,9 +132,7 @@ class DesignScreen extends ConsumerWidget {
                   previewBytes: state.blousePreviewBytes,
                   previewUrl: state.blouseImageUrl,
                   colorSwatch: _hexToColor(state.blouseColorHex),
-                  isUploading: state.isUploading &&
-                      (state.blouseImageUrl == null &&
-                          state.blouseColorHex == null),
+                  isUploading: state.isUploadingBlouse,
                   onTap: () => _handleBlouseUpload(context, ref),
                 ),
                 if (state.error != null) ...[

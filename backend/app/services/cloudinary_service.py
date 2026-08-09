@@ -2,6 +2,7 @@
 import cloudinary
 import cloudinary.uploader
 from fastapi import UploadFile
+from starlette.concurrency import run_in_threadpool
 
 from app.core.config import settings
 from app.schemas.design import UploadResponse
@@ -41,7 +42,11 @@ async def upload_image(file: UploadFile, folder: str) -> UploadResponse:
 
     contents = await file.read()
     try:
-        result = cloudinary.uploader.upload(
+        # cloudinary.uploader.upload() is a blocking/synchronous call — running it directly
+        # would stall the whole event loop (and every other in-flight request) for the entire
+        # upload, so it's offloaded to a worker thread here.
+        result = await run_in_threadpool(
+            cloudinary.uploader.upload,
             contents,
             folder=f"aari-ai-designer/{folder}",
             resource_type="auto",
@@ -63,7 +68,8 @@ async def upload_base64_image(data_base64: str, folder: str) -> UploadResponse:
     """Upload a base64-encoded image (e.g. an AI-generated preview) to Cloudinary."""
     _ensure_configured()
     try:
-        result = cloudinary.uploader.upload(
+        result = await run_in_threadpool(
+            cloudinary.uploader.upload,
             f"data:image/png;base64,{data_base64}",
             folder=f"aari-ai-designer/{folder}",
             resource_type="image",
@@ -86,7 +92,8 @@ async def upload_bytes(data: bytes, folder: str) -> UploadResponse:
     base64-encode round trip for images already in memory as bytes."""
     _ensure_configured()
     try:
-        result = cloudinary.uploader.upload(
+        result = await run_in_threadpool(
+            cloudinary.uploader.upload,
             data,
             folder=f"aari-ai-designer/{folder}",
             resource_type="image",
