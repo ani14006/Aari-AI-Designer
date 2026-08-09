@@ -18,6 +18,14 @@ class ApiService {
 
   Dio get _dio => ApiClient.instance.dio;
 
+  /// Overrides the client's default 90s receiveTimeout for calls that must survive a Render
+  /// free-tier cold start on top of their own work — waking a sleeping backend (and its
+  /// database) alone can take well over 90s, before any AI processing even starts. Used for
+  /// the /generation/preview call (holds the connection open for the whole synchronous AI
+  /// pipeline) and the /visualize and /regenerate kickoff calls (must survive the wake-up even
+  /// though the AI work itself runs as a background task afterwards).
+  static const _generationReceiveTimeout = Duration(minutes: 5);
+
   // ---- Auth / profile ----
 
   Future<UserModel> getMe() async {
@@ -101,24 +109,28 @@ class ApiService {
     String lookStyle = 'Luxury Look',
     OrderDetails? orderDetails,
   }) async {
-    final response = await _dio.post('/generation/preview', data: {
-      'design_id': designId,
-      'embroidery_design_url': embroideryDesignUrl,
-      'saree_image_url': sareeImageUrl,
-      'saree_color_hex': sareeColorHex,
-      'blouse_image_url': blouseImageUrl,
-      'blouse_color_hex': blouseColorHex,
-      'detected_saree_color': detectedSareeColor,
-      'detected_blouse_color': detectedBlouseColor,
-      'detected_design_style': detectedDesignStyle,
-      'bead_recommendations':
-          beadRecommendations.map((b) => b.toJson()).toList(),
-      'palette_options': paletteOptions.map((p) => p.toJson()).toList(),
-      'selected_palette_index': selectedPaletteIndex,
-      'look_style': lookStyle,
-      if (orderDetails != null && !orderDetails.isEmpty)
-        'order_details': orderDetails.toJson(),
-    });
+    final response = await _dio.post(
+      '/generation/preview',
+      data: {
+        'design_id': designId,
+        'embroidery_design_url': embroideryDesignUrl,
+        'saree_image_url': sareeImageUrl,
+        'saree_color_hex': sareeColorHex,
+        'blouse_image_url': blouseImageUrl,
+        'blouse_color_hex': blouseColorHex,
+        'detected_saree_color': detectedSareeColor,
+        'detected_blouse_color': detectedBlouseColor,
+        'detected_design_style': detectedDesignStyle,
+        'bead_recommendations':
+            beadRecommendations.map((b) => b.toJson()).toList(),
+        'palette_options': paletteOptions.map((p) => p.toJson()).toList(),
+        'selected_palette_index': selectedPaletteIndex,
+        'look_style': lookStyle,
+        if (orderDetails != null && !orderDetails.isEmpty)
+          'order_details': orderDetails.toJson(),
+      },
+      options: Options(receiveTimeout: _generationReceiveTimeout),
+    );
     return DesignModel.fromJson(response.data as Map<String, dynamic>);
   }
 
@@ -161,6 +173,7 @@ class ApiService {
         'palette_options': paletteOptions.map((p) => p.toJson()).toList(),
         'selected_palette_index': selectedPaletteIndex,
       },
+      options: Options(receiveTimeout: _generationReceiveTimeout),
     );
     final started = DesignModel.fromJson(response.data as Map<String, dynamic>);
     return _pollUntilComplete(started.id);
@@ -171,6 +184,7 @@ class ApiService {
     final response = await _dio.post(
       '/generation/regenerate/$designId',
       queryParameters: {'look_style': lookStyle},
+      options: Options(receiveTimeout: _generationReceiveTimeout),
     );
     final started = DesignModel.fromJson(response.data as Map<String, dynamic>);
     return _pollUntilComplete(started.id);
