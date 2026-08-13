@@ -10,11 +10,11 @@ class ApiClient {
     _dio = Dio(
       BaseOptions(
         baseUrl: AppConstants.apiBaseUrl,
-        // Free-tier hosts (Render, etc.) spin the backend down after inactivity — Render's own
-        // dashboard warns waking it back up "can delay requests by 50 seconds or more". 30s
-        // wasn't enough margin and caused spurious connection timeouts on the first request
-        // after idling.
-        connectTimeout: const Duration(seconds: 90),
+        // Every backend deploy restarts the container — even on a paid Render plan that no
+        // longer idles down, the first connection attempt right after a restart can still find
+        // the server not yet accepting connections. 90s wasn't enough margin and caused spurious
+        // DioException [connection timeout] failures for requests that landed in that window.
+        connectTimeout: const Duration(seconds: 180),
         receiveTimeout: const Duration(seconds: 90),
         sendTimeout: const Duration(seconds: 60),
       ),
