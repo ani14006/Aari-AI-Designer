@@ -11,22 +11,26 @@ class AppTheme {
   static const double radiusMedium = 16;
   static const double radiusSmall = 10;
 
-  /// Very subtle ambient shadow used on cards/tiles — the reference design reads as flat, white
-  /// cards on a cream background with a hairline border doing most of the work, so this is
-  /// intentionally much quieter than a typical "elevated" shadow.
+  /// Cards are flat — a hairline border does all the work, no shadow. Kept as a no-op (rather
+  /// than deleting every `boxShadow: AppTheme.softShadow(...)` call site) so every card/tile in
+  /// the app loses its shadow from this one change. See [photoShadow] for the app's one
+  /// deliberate exception.
   static List<BoxShadow> softShadow(BuildContext context,
       {double strength = 1}) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return [
-      BoxShadow(
-        color: (isDark ? Colors.black : AppColors.ink)
-            .withValues(alpha: (isDark ? 0.28 : 0.035) * strength),
-        blurRadius: 20,
-        offset: const Offset(0, 8),
-        spreadRadius: -8,
-      ),
-    ];
+    return const [];
   }
+
+  /// The app's one deliberate shadow, reserved for product/preview photography resting on a
+  /// surface (the Result screen's generated preview, the Landing hero's image panel) — never
+  /// applied to cards, buttons, or chrome.
+  static const List<BoxShadow> photoShadow = [
+    BoxShadow(
+      color: Color.fromRGBO(36, 27, 22, 0.28),
+      blurRadius: 40,
+      offset: Offset(0, 20),
+      spreadRadius: -12,
+    ),
+  ];
 
   static ThemeData light = ThemeData(
     useMaterial3: true,

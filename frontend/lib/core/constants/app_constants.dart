@@ -40,6 +40,10 @@ class AppConstants {
   static const double spaceLg = 24;
   static const double spaceXl = 32;
   static const double spaceXxl = 48;
+
+  /// Vertical padding for full-bleed marketing sections (Landing screen) — Apple-style generous
+  /// section rhythm; no other screen needs a token this large.
+  static const double spaceSection = 96;
 }
 
 /// The six regenerate "look" presets from the Result screen.

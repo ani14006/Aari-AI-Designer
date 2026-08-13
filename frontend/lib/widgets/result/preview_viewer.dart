@@ -23,50 +23,57 @@ class _PreviewViewerState extends State<PreviewViewer> {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-      child: Stack(
-        children: [
-          AspectRatio(
-            aspectRatio: 3 / 4,
-            child: Container(
-              color: AppColors.champagne,
-              child: _compareMode && widget.originalBlouseUrl != null
-                  ? Row(
-                      children: [
-                        Expanded(
-                            child: _rotatedZoomable(widget.originalBlouseUrl!)),
-                        Container(width: 2, color: AppColors.ivory),
-                        Expanded(
-                            child: _rotatedZoomable(widget.previewImageUrl)),
-                      ],
-                    )
-                  : _rotatedZoomable(widget.previewImageUrl),
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        boxShadow: AppTheme.photoShadow,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        child: Stack(
+          children: [
+            AspectRatio(
+              aspectRatio: 3 / 4,
+              child: Container(
+                color: AppColors.champagne,
+                child: _compareMode && widget.originalBlouseUrl != null
+                    ? Row(
+                        children: [
+                          Expanded(
+                              child:
+                                  _rotatedZoomable(widget.originalBlouseUrl!)),
+                          Container(width: 2, color: AppColors.ivory),
+                          Expanded(
+                              child: _rotatedZoomable(widget.previewImageUrl)),
+                        ],
+                      )
+                    : _rotatedZoomable(widget.previewImageUrl),
+              ),
             ),
-          ),
-          Positioned(
-            right: 12,
-            bottom: 12,
-            child: Column(
-              children: [
-                _ControlButton(
-                  icon: Icons.rotate_90_degrees_ccw_rounded,
-                  onTap: () =>
-                      setState(() => _quarterTurns = (_quarterTurns + 1) % 4),
-                ),
-                const SizedBox(height: 10),
-                if (widget.originalBlouseUrl != null)
+            Positioned(
+              right: 12,
+              bottom: 12,
+              child: Column(
+                children: [
                   _ControlButton(
-                    icon: _compareMode
-                        ? Icons.compare_arrows_rounded
-                        : Icons.compare_rounded,
-                    active: _compareMode,
-                    onTap: () => setState(() => _compareMode = !_compareMode),
+                    icon: Icons.rotate_90_degrees_ccw_rounded,
+                    onTap: () =>
+                        setState(() => _quarterTurns = (_quarterTurns + 1) % 4),
                   ),
-              ],
+                  const SizedBox(height: 10),
+                  if (widget.originalBlouseUrl != null)
+                    _ControlButton(
+                      icon: _compareMode
+                          ? Icons.compare_arrows_rounded
+                          : Icons.compare_rounded,
+                      active: _compareMode,
+                      onTap: () => setState(() => _compareMode = !_compareMode),
+                    ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

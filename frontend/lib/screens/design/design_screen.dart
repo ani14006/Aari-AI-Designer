@@ -84,7 +84,9 @@ class DesignScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(designFlowProvider);
     final width = MediaQuery.sizeOf(context).width;
-    final hPad = ResponsiveUtils.horizontalPadding(width);
+    final hPad = ResponsiveUtils.isDesktop(width)
+        ? 64.0
+        : ResponsiveUtils.horizontalPadding(width);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Design Your Blouse')),

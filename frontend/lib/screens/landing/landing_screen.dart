@@ -2,60 +2,109 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/responsive.dart';
-import '../../widgets/common/decorative_background.dart';
-import '../../widgets/common/embroidery_motif.dart';
 import '../../widgets/common/luxury_button.dart';
 
-/// Public marketing/landing page shown to signed-out visitors before Login/Signup — modelled on
-/// the reference layout: top nav (logo + Sign in/Get Started), a hero pitch, a "How it works"
-/// 3-step explainer, a feature-highlights bullet list, and a footer.
+/// Public marketing/landing page shown to signed-out visitors before Login/Signup.
+///
+/// Apple-inspired refresh: full-bleed alternating sections (no max-width card wrapper around the
+/// whole page) — champagne hero, near-black "How it works", champagne feature highlights, ivory
+/// footer. The colour change between sections is the divider; there are no card borders/shadows
+/// between them.
 class LandingScreen extends StatelessWidget {
   const LandingScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
-    final isWide = ResponsiveUtils.isTabletOrWider(width);
-    final hPad = ResponsiveUtils.horizontalPadding(width);
-
     return Scaffold(
-      body: DecorativeBackground(
-        child: SafeArea(
-          child: SingleChildScrollView(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: isWide ? 960 : 680),
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: hPad, vertical: 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _TopNav(
-                        onSignIn: () => context.push('/login'),
-                        onGetStarted: () => context.push('/signup'),
-                      ),
-                      const SizedBox(height: 48),
-                      _Hero(
-                        isWide: isWide,
-                        onGetStarted: () => context.push('/signup'),
-                        onSignIn: () => context.push('/login'),
-                      ),
-                      const SizedBox(height: 64),
-                      const _HowItWorks(),
-                      const SizedBox(height: 56),
-                      const _FeatureHighlights(),
-                      const SizedBox(height: 48),
-                      const _Footer(),
-                      const SizedBox(height: 24),
-                    ],
-                  ),
+      backgroundColor: AppColors.champagne,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _Section(
+                background: Colors.transparent,
+                verticalPadding: 28,
+                child: _TopNav(
+                  onSignIn: () => context.push('/login'),
+                  onGetStarted: () => context.push('/signup'),
                 ),
               ),
-            ),
+              _Section(
+                background: AppColors.champagne,
+                child: _Hero(
+                  onGetStarted: () => context.push('/signup'),
+                  onSignIn: () => context.push('/login'),
+                ),
+              ),
+              _Section(
+                background: AppColors.ink,
+                child: Theme(
+                  data:
+                      Theme.of(context).copyWith(textTheme: AppTextStyles.dark),
+                  child: const _HowItWorks(),
+                ),
+              ),
+              const _Section(
+                background: AppColors.champagne,
+                child: _FeatureHighlights(),
+              ),
+              _Section(
+                background: AppColors.ivory,
+                topBorder: true,
+                verticalPadding: 64,
+                child: const _Footer(),
+              ),
+            ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A full-bleed section: background colour extends edge-to-edge; content inside is centred and
+/// width-capped for readability. The background colour change between sections is the only
+/// divider — no borders or shadows separate them.
+class _Section extends StatelessWidget {
+  final Color background;
+  final Widget child;
+  final double? verticalPadding;
+  final bool topBorder;
+
+  const _Section({
+    required this.background,
+    required this.child,
+    this.verticalPadding,
+    this.topBorder = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final isWide = ResponsiveUtils.isTabletOrWider(width);
+    final hPad = isWide ? 64.0 : ResponsiveUtils.horizontalPadding(width);
+    final vPad = verticalPadding ??
+        (isWide ? AppConstants.spaceSection : AppConstants.spaceXxl);
+
+    return Container(
+      width: double.infinity,
+      color: background,
+      decoration: topBorder
+          ? const BoxDecoration(
+              border: Border(top: BorderSide(color: AppColors.borderLight)))
+          : null,
+      padding: EdgeInsets.symmetric(horizontal: hPad, vertical: vPad),
+      child: Center(
+        child: ConstrainedBox(
+          constraints:
+              const BoxConstraints(maxWidth: Breakpoints.maxContentWidth),
+          child: child,
         ),
       ),
     );
@@ -92,17 +141,16 @@ class _TopNav extends StatelessWidget {
 }
 
 class _Hero extends StatelessWidget {
-  final bool isWide;
   final VoidCallback onGetStarted;
   final VoidCallback onSignIn;
 
-  const _Hero(
-      {required this.isWide,
-      required this.onGetStarted,
-      required this.onSignIn});
+  const _Hero({required this.onGetStarted, required this.onSignIn});
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final isWide = ResponsiveUtils.isTabletOrWider(width);
+
     final content = isWide
         ? Row(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -148,25 +196,27 @@ class _HeroText extends StatelessWidget {
         Text(
           'AI-POWERED AARI EMBROIDERY DESIGN',
           textAlign: textAlign,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                letterSpacing: 2.5,
-                fontWeight: FontWeight.w700,
-                color: AppColors.antiqueGold,
-              ),
+          style: AppTextStyles.eyebrow(),
         ),
         const SizedBox(height: 14),
-        Text(
-          'Visualise Your Embroidery\nBefore You Stitch',
-          textAlign: textAlign,
-          style: Theme.of(context).textTheme.displayMedium,
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: Text(
+            'Visualise Your Embroidery\nBefore You Stitch',
+            textAlign: textAlign,
+            style: Theme.of(context).textTheme.displayLarge,
+          ),
         ),
         const SizedBox(height: 16),
-        Text(
-          'Upload your embroidery design, saree and blouse fabric. Our AI analyses the colours, '
-          'recommends bead palettes, and generates a photorealistic preview — plus a ready-made '
-          'materials shopping list — before a single stitch is made.',
-          textAlign: textAlign,
-          style: Theme.of(context).textTheme.bodyMedium,
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: Text(
+            'Upload your embroidery design, saree and blouse fabric. Our AI analyses the colours, '
+            'recommends bead palettes, and generates a photorealistic preview — plus a ready-made '
+            'materials shopping list — before a single stitch is made.',
+            textAlign: textAlign,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
         ),
         const SizedBox(height: 28),
         Wrap(
@@ -188,34 +238,27 @@ class _HeroText extends StatelessWidget {
             ),
           ],
         ),
-        if (!isWide) ...[
-          const SizedBox(height: 32),
-          const Center(child: EmbroideryMotif(size: 110, opacity: 0.6)),
-        ],
       ],
     );
   }
 }
 
 /// Decorative right-hand panel for the wide hero layout — a bordered "atelier-grade" card with a
-/// palette icon, mirroring the reference site's decorative preview panel. No image asset exists,
-/// so this is built from shapes/icon + caption only.
+/// palette icon, standing in for a product/mannequin photo (none exists in the repo). Carries
+/// the app's one deliberate shadow, since it occupies the "product image" slot.
 class _AtelierPanel extends StatelessWidget {
   const _AtelierPanel();
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return AspectRatio(
       aspectRatio: 1,
       child: Container(
         decoration: BoxDecoration(
-          color: isDark ? AppColors.cardDark : AppColors.champagne,
+          color: AppColors.surfaceLight,
           borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-          border: Border.all(
-              color: isDark ? AppColors.borderDark : AppColors.borderLight),
-          boxShadow: AppTheme.softShadow(context, strength: 0.5),
+          border: Border.all(color: AppColors.borderLight),
+          boxShadow: AppTheme.photoShadow,
         ),
         alignment: Alignment.center,
         child: Column(
@@ -225,17 +268,14 @@ class _AtelierPanel extends StatelessWidget {
               height: 64,
               width: 64,
               decoration: const BoxDecoration(
-                  gradient: AppColors.goldGradient, shape: BoxShape.circle),
+                  color: AppColors.ink, shape: BoxShape.circle),
               child: const Icon(Icons.palette_rounded,
                   color: Colors.white, size: 28),
             ),
             const SizedBox(height: 18),
             Text(
               'Atelier-grade palette',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(fontStyle: FontStyle.italic),
+              style: AppTextStyles.accentItalic(18),
             ),
           ],
         ),
@@ -294,8 +334,6 @@ class _StepTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -306,13 +344,12 @@ class _StepTile extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(color: AppColors.gold, width: 1.4),
-            color: isDark ? AppColors.cardDark : AppColors.champagne,
           ),
           child: Text(
             number.toString().padLeft(2, '0'),
             style: const TextStyle(
                 fontWeight: FontWeight.w700,
-                color: AppColors.antiqueGold,
+                color: AppColors.gold,
                 fontSize: 13),
           ),
         ),
@@ -365,10 +402,7 @@ class _FeatureHighlights extends StatelessWidget {
       children: [
         Text(
           'Designer logic, not guesswork',
-          style: Theme.of(context)
-              .textTheme
-              .headlineMedium
-              ?.copyWith(fontStyle: FontStyle.italic),
+          style: AppTextStyles.accentItalic(28),
         ),
         const SizedBox(height: 20),
         for (final feature in _features)
@@ -379,8 +413,7 @@ class _FeatureHighlights extends StatelessWidget {
               children: [
                 const Text('◆ ',
                     style: TextStyle(
-                        color: AppColors.ink,
-                        fontWeight: FontWeight.w700)),
+                        color: AppColors.gold, fontWeight: FontWeight.w700)),
                 Expanded(
                   child: Text.rich(
                     TextSpan(
@@ -410,8 +443,6 @@ class _Footer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const Divider(),
-        const SizedBox(height: 16),
         Text(
           '© 2026 Aari AI Designer',
           textAlign: TextAlign.center,

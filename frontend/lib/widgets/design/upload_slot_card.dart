@@ -37,41 +37,63 @@ class UploadSlotCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final row = Row(
+      children: [
+        _buildPreview(context),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 4),
+              Text(
+                _hasContent ? 'Tap to change' : subtitle,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
+        if (isUploading)
+          const SizedBox(
+              height: 22,
+              width: 22,
+              child: CircularProgressIndicator(strokeWidth: 2.2))
+        else
+          Icon(
+            _hasContent
+                ? Icons.check_circle_rounded
+                : Icons.add_circle_outline_rounded,
+            color: _hasContent ? AppColors.success : AppColors.ink,
+            size: 26,
+          ),
+      ],
+    );
+
+    // Empty (never-filled, not currently uploading) slots get a dashed border instead of the
+    // usual solid hairline — a lighter-weight "nothing here yet" affordance.
+    if (!_hasContent && !isUploading) {
+      final radius = BorderRadius.circular(AppTheme.radiusLarge);
+      return Material(
+        color: Theme.of(context).cardTheme.color,
+        borderRadius: radius,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          borderRadius: radius,
+          onTap: onTap,
+          child: CustomPaint(
+            painter: _DashedBorderPainter(
+                color: AppColors.borderLight, radius: AppTheme.radiusLarge),
+            child: Padding(padding: const EdgeInsets.all(16), child: row),
+          ),
+        ),
+      );
+    }
+
     return LuxuryCard(
       onTap: isUploading ? null : onTap,
       padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          _buildPreview(context),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 4),
-                Text(
-                  _hasContent ? 'Tap to change' : subtitle,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-            ),
-          ),
-          if (isUploading)
-            const SizedBox(
-                height: 22,
-                width: 22,
-                child: CircularProgressIndicator(strokeWidth: 2.2))
-          else
-            Icon(
-              _hasContent
-                  ? Icons.check_circle_rounded
-                  : Icons.add_circle_outline_rounded,
-              color: _hasContent ? AppColors.success : AppColors.ink,
-              size: 26,
-            ),
-        ],
-      ),
+      child: row,
     );
   }
 
@@ -130,4 +152,53 @@ class UploadSlotCard extends StatelessWidget {
       child: Icon(placeholderIcon, color: AppColors.ink, size: 26),
     );
   }
+}
+
+/// Paints a dashed rounded-rect border — Flutter has no built-in dashed [BoxBorder], so the
+/// empty upload slot's "nothing here yet" outline is hand-painted rather than pulling in a
+/// package for one visual state.
+class _DashedBorderPainter extends CustomPainter {
+  final Color color;
+  final double radius;
+
+  static const _strokeWidth = 1.5;
+  static const _dashWidth = 6.0;
+  static const _dashGap = 4.0;
+
+  const _DashedBorderPainter({required this.color, required this.radius});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = _strokeWidth
+      ..style = PaintingStyle.stroke;
+    final rrect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(
+        _strokeWidth / 2,
+        _strokeWidth / 2,
+        size.width - _strokeWidth,
+        size.height - _strokeWidth,
+      ),
+      Radius.circular(radius),
+    );
+    final path = Path()..addRRect(rrect);
+    final dashedPath = Path();
+    for (final metric in path.computeMetrics()) {
+      var distance = 0.0;
+      while (distance < metric.length) {
+        final next = distance + _dashWidth;
+        dashedPath.addPath(
+          metric.extractPath(distance, next.clamp(0, metric.length)),
+          Offset.zero,
+        );
+        distance = next + _dashGap;
+      }
+    }
+    canvas.drawPath(dashedPath, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedBorderPainter oldDelegate) =>
+      color != oldDelegate.color || radius != oldDelegate.radius;
 }

@@ -28,85 +28,85 @@ class PaletteOptionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardTheme.color,
-          borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-          border: Border.all(
-              color: isSelected ? AppColors.ink : AppColors.borderLight,
-              width: isSelected ? 2 : 1),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                      color: AppColors.ink.withValues(alpha: 0.22),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                      spreadRadius: -4)
-                ]
-              : AppTheme.softShadow(context, strength: 0.6),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.ink.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    palette.scheme,
-                    style: const TextStyle(
-                        color: AppColors.ink,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 11.5),
-                  ),
+    final outerRadius = BorderRadius.circular(AppTheme.radiusMedium + 4);
+
+    final card = Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.ink.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                const Spacer(),
-                Icon(
-                  isSelected
-                      ? Icons.check_circle_rounded
-                      : Icons.circle_outlined,
-                  color:
-                      isSelected ? AppColors.ink : AppColors.borderLight,
+                child: Text(
+                  palette.scheme,
+                  style: const TextStyle(
+                      color: AppColors.ink,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 11.5),
                 ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Text(palette.title, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 4),
-            Text(palette.description,
-                style: Theme.of(context).textTheme.bodySmall),
-            const SizedBox(height: 12),
-            Row(
-              children: palette.beadRecommendations
-                  .map((b) => Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: Tooltip(
-                          message: b.name,
-                          child: Container(
-                            height: 28,
-                            width: 28,
-                            decoration: BoxDecoration(
-                              color: _swatchColor(b.hexColor),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                  color: AppColors.borderLight, width: 1.5),
-                            ),
+              ),
+              const Spacer(),
+              Icon(
+                isSelected ? Icons.check_circle_rounded : Icons.circle_outlined,
+                color: isSelected ? AppColors.ink : AppColors.borderLight,
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(palette.title, style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 4),
+          Text(palette.description,
+              style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(height: 12),
+          Row(
+            children: palette.beadRecommendations
+                .map((b) => Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Tooltip(
+                        message: b.name,
+                        child: Container(
+                          height: 28,
+                          width: 28,
+                          decoration: BoxDecoration(
+                            color: _swatchColor(b.hexColor),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                                color: AppColors.borderLight, width: 1.5),
                           ),
                         ),
-                      ))
-                  .toList(),
-            ),
-          ],
+                      ),
+                    ))
+                .toList(),
+          ),
+        ],
+      ),
+    );
+
+    // Selected state is a double-ring "halo" (gold ring, gap, card border) rather than a single
+    // thicker border — the gap is the surrounding page background showing through the padding.
+    return InkWell(
+      onTap: onTap,
+      borderRadius: outerRadius,
+      child: Container(
+        padding: EdgeInsets.all(isSelected ? 2 : 0),
+        decoration: BoxDecoration(
+          borderRadius: outerRadius,
+          border:
+              isSelected ? Border.all(color: AppColors.gold, width: 2) : null,
         ),
+        child: card,
       ),
     );
   }
