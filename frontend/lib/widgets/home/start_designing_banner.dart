@@ -28,7 +28,7 @@ class StartDesigningBanner extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppColors.lightBlush, AppColors.homeBackground],
+          colors: [AppColors.champagne, AppColors.backgroundLight],
         ),
         borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
         border: Border.all(color: AppColors.borderLight),
@@ -93,7 +93,7 @@ class _BannerText extends StatelessWidget {
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   letterSpacing: 2.5,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.wine,
+                  color: AppColors.antiqueGold,
                 ),
           ),
           const SizedBox(height: AppConstants.spaceSm),
@@ -111,7 +111,6 @@ class _BannerText extends StatelessWidget {
             label: 'Start Designing',
             icon: Icons.auto_awesome_rounded,
             fullWidth: isSmallMobile,
-            color: AppColors.wine,
             onPressed: onStartDesigning,
           ),
           const SizedBox(height: AppConstants.spaceSm),

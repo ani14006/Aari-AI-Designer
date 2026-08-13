@@ -54,7 +54,7 @@ class SplashScreen extends StatelessWidget {
                 height: 22,
                 width: 22,
                 child: CircularProgressIndicator(
-                    strokeWidth: 2.4, color: AppColors.roseGold),
+                    strokeWidth: 2.4, color: AppColors.ink),
               ).animate().fadeIn(delay: 500.ms, duration: 400.ms),
             ],
           ),

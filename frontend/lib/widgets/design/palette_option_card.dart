@@ -37,12 +37,12 @@ class PaletteOptionCard extends StatelessWidget {
           color: Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
           border: Border.all(
-              color: isSelected ? AppColors.roseGold : AppColors.borderLight,
+              color: isSelected ? AppColors.ink : AppColors.borderLight,
               width: isSelected ? 2 : 1),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                      color: AppColors.roseGold.withValues(alpha: 0.22),
+                      color: AppColors.ink.withValues(alpha: 0.22),
                       blurRadius: 20,
                       offset: const Offset(0, 8),
                       spreadRadius: -4)
@@ -58,13 +58,13 @@ class PaletteOptionCard extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppColors.roseGold.withValues(alpha: 0.14),
+                    color: AppColors.ink.withValues(alpha: 0.14),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     palette.scheme,
                     style: const TextStyle(
-                        color: AppColors.roseGold,
+                        color: AppColors.ink,
                         fontWeight: FontWeight.w700,
                         fontSize: 11.5),
                   ),
@@ -75,7 +75,7 @@ class PaletteOptionCard extends StatelessWidget {
                       ? Icons.check_circle_rounded
                       : Icons.circle_outlined,
                   color:
-                      isSelected ? AppColors.roseGold : AppColors.borderLight,
+                      isSelected ? AppColors.ink : AppColors.borderLight,
                 ),
               ],
             ),

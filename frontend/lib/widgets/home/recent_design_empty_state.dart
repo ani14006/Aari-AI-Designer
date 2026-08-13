@@ -22,7 +22,7 @@ class RecentDesignEmptyState extends StatelessWidget {
       constraints: BoxConstraints(minHeight: isDesktop ? 200 : 160),
       padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
       decoration: BoxDecoration(
-        color: AppColors.lightBlush,
+        color: AppColors.champagne,
         borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
         border: Border.all(
             color: isDark ? AppColors.borderDark : AppColors.borderLight),
@@ -54,7 +54,6 @@ class RecentDesignEmptyState extends StatelessWidget {
             label: 'Create First Design',
             icon: Icons.add_rounded,
             fullWidth: false,
-            color: AppColors.wine,
             onPressed: onCreateFirstDesign,
           ),
         ],

@@ -80,7 +80,7 @@ class DesignHistoryCard extends StatelessWidget {
                             ? Icons.favorite_rounded
                             : Icons.favorite_border_rounded,
                         size: 16,
-                        color: AppColors.roseGold,
+                        color: AppColors.ink,
                       ),
                     ),
                   ),

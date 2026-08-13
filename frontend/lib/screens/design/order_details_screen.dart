@@ -93,11 +93,11 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
           label: Text(option),
           selected: isSelected,
           onSelected: (_) => onSelected(option),
-          selectedColor: AppColors.roseGold.withValues(alpha: 0.18),
+          selectedColor: AppColors.ink.withValues(alpha: 0.18),
           side: BorderSide(
-              color: isSelected ? AppColors.roseGold : AppColors.borderLight),
+              color: isSelected ? AppColors.ink : AppColors.borderLight),
           labelStyle: TextStyle(
-              color: isSelected ? AppColors.roseGold : null,
+              color: isSelected ? AppColors.ink : null,
               fontWeight: FontWeight.w600),
         );
       }).toList(),

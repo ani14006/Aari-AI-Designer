@@ -74,7 +74,7 @@ class _SheetOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Icon(icon, color: AppColors.roseGold),
+      leading: Icon(icon, color: AppColors.ink),
       title: Text(label, style: Theme.of(context).textTheme.bodyLarge),
       onTap: onTap,
     );

@@ -31,7 +31,7 @@ class LookStyleSelector extends StatelessWidget {
             label: Text(style),
             selected: isSelected,
             onSelected: isBusy ? null : (_) => onSelected(style),
-            selectedColor: AppColors.roseGold,
+            selectedColor: AppColors.ink,
             backgroundColor: Theme.of(context).cardTheme.color,
             labelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: isSelected ? Colors.white : null,
@@ -40,7 +40,7 @@ class LookStyleSelector extends StatelessWidget {
             shape: StadiumBorder(
                 side: BorderSide(
                     color: isSelected
-                        ? AppColors.roseGold
+                        ? AppColors.ink
                         : AppColors.borderLight)),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           );

@@ -66,8 +66,7 @@ class LuxuryBottomNav extends StatelessWidget {
                         margin: const EdgeInsets.symmetric(
                             vertical: 10, horizontal: 4),
                         decoration: BoxDecoration(
-                          gradient:
-                              isSelected ? AppColors.roseGoldGradient : null,
+                          color: isSelected ? AppColors.ink : null,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Column(

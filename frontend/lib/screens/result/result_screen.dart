@@ -190,7 +190,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
               _design.isFavourite
                   ? Icons.favorite_rounded
                   : Icons.favorite_border_rounded,
-              color: AppColors.roseGold,
+              color: AppColors.ink,
             ),
             onPressed: _toggleFavourite,
           ),
@@ -225,7 +225,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
               if (_isRegenerating)
                 const Padding(
                   padding: EdgeInsets.only(top: 12),
-                  child: LinearProgressIndicator(color: AppColors.roseGold),
+                  child: LinearProgressIndicator(color: AppColors.ink),
                 ),
               if (_design.qaResult != null) ...[
                 const SizedBox(height: 10),
@@ -254,7 +254,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
                     style: Theme.of(context)
                         .textTheme
                         .bodySmall
-                        ?.copyWith(color: AppColors.roseGold),
+                        ?.copyWith(color: AppColors.ink),
                   );
                 }),
               ],
@@ -288,7 +288,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
                           color: _design.budget > 0 &&
                                   _design.estimatedCost > _design.budget
                               ? AppColors.error
-                              : AppColors.roseGold,
+                              : AppColors.ink,
                         ),
                   ),
                 ],

@@ -379,7 +379,7 @@ class _FeatureHighlights extends StatelessWidget {
               children: [
                 const Text('◆ ',
                     style: TextStyle(
-                        color: AppColors.roseGold,
+                        color: AppColors.ink,
                         fontWeight: FontWeight.w700)),
                 Expanded(
                   child: Text.rich(

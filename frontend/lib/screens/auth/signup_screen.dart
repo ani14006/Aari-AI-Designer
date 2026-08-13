@@ -153,7 +153,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                         child: const Text(
                           'Sign In',
                           style: TextStyle(
-                              color: AppColors.roseGold,
+                              color: AppColors.ink,
                               fontWeight: FontWeight.w700),
                         ),
                       ),

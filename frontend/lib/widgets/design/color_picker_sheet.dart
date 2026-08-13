@@ -57,7 +57,7 @@ Future<String?> showColorPickerSheet(BuildContext context,
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: isSelected
-                                  ? AppColors.roseGold
+                                  ? AppColors.ink
                                   : Colors.transparent,
                               width: 3,
                             ),

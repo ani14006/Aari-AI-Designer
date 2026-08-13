@@ -49,7 +49,7 @@ class SettingsScreen extends ConsumerWidget {
                             boxShadow: [
                               BoxShadow(
                                   color:
-                                      AppColors.roseGold.withValues(alpha: 0.3),
+                                      AppColors.ink.withValues(alpha: 0.3),
                                   blurRadius: 16,
                                   offset: const Offset(0, 6),
                                   spreadRadius: -4),
@@ -151,8 +151,7 @@ class SettingsScreen extends ConsumerWidget {
                     height: 36,
                     width: 36,
                     decoration: const BoxDecoration(
-                        gradient: AppColors.roseGoldGradient,
-                        shape: BoxShape.circle),
+                        color: AppColors.ink, shape: BoxShape.circle),
                     child: const Icon(Icons.shopping_bag_outlined,
                         color: Colors.white, size: 18),
                   ),

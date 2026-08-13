@@ -95,7 +95,7 @@ class _ControlButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: active ? AppColors.roseGold : Colors.white.withValues(alpha: 0.9),
+      color: active ? AppColors.ink : Colors.white.withValues(alpha: 0.9),
       shape: const CircleBorder(),
       elevation: 2,
       child: InkWell(

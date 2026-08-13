@@ -67,7 +67,7 @@ class UploadSlotCard extends StatelessWidget {
               _hasContent
                   ? Icons.check_circle_rounded
                   : Icons.add_circle_outline_rounded,
-              color: _hasContent ? AppColors.success : AppColors.roseGold,
+              color: _hasContent ? AppColors.success : AppColors.ink,
               size: 26,
             ),
         ],
@@ -127,7 +127,7 @@ class UploadSlotCard extends StatelessWidget {
         color: AppColors.champagne,
         borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
       ),
-      child: Icon(placeholderIcon, color: AppColors.roseGold, size: 26),
+      child: Icon(placeholderIcon, color: AppColors.ink, size: 26),
     );
   }
 }

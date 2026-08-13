@@ -89,7 +89,7 @@ class CartScreen extends ConsumerWidget {
                           style: Theme.of(context)
                               .textTheme
                               .headlineSmall
-                              ?.copyWith(color: AppColors.roseGold),
+                              ?.copyWith(color: AppColors.ink),
                         ),
                       ],
                     ),

@@ -49,7 +49,7 @@ class RecentDesignCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-        hoverColor: AppColors.wine.withValues(alpha: 0.04),
+        hoverColor: AppColors.ink.withValues(alpha: 0.04),
         child: Container(
           width: width,
           decoration: BoxDecoration(
@@ -75,7 +75,7 @@ class RecentDesignCard extends StatelessWidget {
                           height: double.infinity,
                           borderRadius: BorderRadius.zero),
                       errorWidget: (_, __, ___) => Container(
-                          color: AppColors.lightBlush,
+                          color: AppColors.champagne,
                           child:
                               const Icon(Icons.image_not_supported_outlined)),
                     ),
@@ -107,7 +107,7 @@ class RecentDesignCard extends StatelessWidget {
                                   ? Icons.favorite_rounded
                                   : Icons.favorite_border_rounded,
                               size: 16,
-                              color: AppColors.wine,
+                              color: AppColors.ink,
                             ),
                           ),
                         ),
@@ -173,7 +173,9 @@ class _Badge extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: const TextStyle(
-            fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.wine),
+            fontSize: 10.5,
+            fontWeight: FontWeight.w700,
+            color: AppColors.antiqueGold),
       ),
     );
   }

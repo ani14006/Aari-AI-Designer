@@ -21,22 +21,22 @@ class EmbroideryMotif extends StatelessWidget {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            _ring(size, AppColors.wine.withValues(alpha: 0.18)),
-            _ring(size * 0.72, AppColors.gold.withValues(alpha: 0.28)),
-            _ring(size * 0.46, AppColors.wine.withValues(alpha: 0.22)),
+            _ring(size, AppColors.antiqueGold.withValues(alpha: 0.22)),
+            _ring(size * 0.72, AppColors.gold.withValues(alpha: 0.3)),
+            _ring(size * 0.46, AppColors.antiqueGold.withValues(alpha: 0.24)),
             Transform.rotate(
               angle: 0.78,
               child: Container(
                   height: 1.4,
                   width: size * 0.9,
-                  color: AppColors.gold.withValues(alpha: 0.3)),
+                  color: AppColors.gold.withValues(alpha: 0.32)),
             ),
             Transform.rotate(
               angle: -0.78,
               child: Container(
                   height: 1.4,
                   width: size * 0.9,
-                  color: AppColors.wine.withValues(alpha: 0.16)),
+                  color: AppColors.antiqueGold.withValues(alpha: 0.2)),
             ),
           ],
         ),

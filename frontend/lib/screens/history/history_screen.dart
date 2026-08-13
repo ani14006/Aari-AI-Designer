@@ -45,7 +45,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                       selected: !_favouritesOnly,
                       onSelected: (_) =>
                           setState(() => _favouritesOnly = false),
-                      selectedColor: AppColors.roseGold,
+                      selectedColor: AppColors.ink,
                       labelStyle: TextStyle(
                           color: !_favouritesOnly ? Colors.white : null,
                           fontWeight: FontWeight.w600),
@@ -55,7 +55,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                       label: const Text('Favourites'),
                       selected: _favouritesOnly,
                       onSelected: (_) => setState(() => _favouritesOnly = true),
-                      selectedColor: AppColors.roseGold,
+                      selectedColor: AppColors.ink,
                       labelStyle: TextStyle(
                           color: _favouritesOnly ? Colors.white : null,
                           fontWeight: FontWeight.w600),
