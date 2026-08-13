@@ -11,25 +11,19 @@ class AppTheme {
   static const double radiusMedium = 16;
   static const double radiusSmall = 10;
 
-  /// Soft ambient shadow used on cards/tiles throughout the app for a premium, elevated feel —
-  /// replaces the old flat border-only look. Warmer + wider in light mode, deeper in dark mode.
+  /// Very subtle ambient shadow used on cards/tiles — the reference design reads as flat, white
+  /// cards on a cream background with a hairline border doing most of the work, so this is
+  /// intentionally much quieter than a typical "elevated" shadow.
   static List<BoxShadow> softShadow(BuildContext context,
       {double strength = 1}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return [
       BoxShadow(
-        color: (isDark ? Colors.black : AppColors.deepMaroon)
-            .withValues(alpha: (isDark ? 0.32 : 0.07) * strength),
-        blurRadius: 28,
-        offset: const Offset(0, 14),
-        spreadRadius: -10,
-      ),
-      BoxShadow(
-        color: (isDark ? Colors.black : AppColors.antiqueGold)
-            .withValues(alpha: (isDark ? 0.18 : 0.05) * strength),
-        blurRadius: 10,
-        offset: const Offset(0, 3),
-        spreadRadius: -4,
+        color: (isDark ? Colors.black : AppColors.ink)
+            .withValues(alpha: (isDark ? 0.28 : 0.035) * strength),
+        blurRadius: 20,
+        offset: const Offset(0, 8),
+        spreadRadius: -8,
       ),
     ];
   }
@@ -39,7 +33,7 @@ class AppTheme {
     brightness: Brightness.light,
     scaffoldBackgroundColor: AppColors.backgroundLight,
     colorScheme: const ColorScheme.light(
-      primary: AppColors.roseGold,
+      primary: AppColors.ink,
       secondary: AppColors.gold,
       surface: AppColors.surfaceLight,
       error: AppColors.error,
@@ -64,28 +58,31 @@ class AppTheme {
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.roseGold,
+        backgroundColor: AppColors.ink,
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 28),
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(radiusMedium)),
-        textStyle: AppTextStyles.light.labelLarge,
+        shape: const StadiumBorder(),
+        textStyle: AppTextStyles.light.labelLarge
+            ?.copyWith(letterSpacing: 0.6, fontWeight: FontWeight.w700),
         elevation: 0,
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        foregroundColor: AppColors.textPrimaryLight,
-        side: const BorderSide(color: AppColors.borderLight, width: 1.4),
+        foregroundColor: AppColors.ink,
+        side: const BorderSide(color: AppColors.ink, width: 1.4),
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(radiusMedium)),
-        textStyle: AppTextStyles.light.labelLarge,
+        shape: const StadiumBorder(),
+        textStyle: AppTextStyles.light.labelLarge
+            ?.copyWith(letterSpacing: 0.6, fontWeight: FontWeight.w700),
       ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(foregroundColor: AppColors.ink),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: AppColors.cardLight,
+      fillColor: AppColors.surfaceLight,
       contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(radiusMedium),
@@ -97,7 +94,7 @@ class AppTheme {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(radiusMedium),
-        borderSide: const BorderSide(color: AppColors.roseGold, width: 1.6),
+        borderSide: const BorderSide(color: AppColors.ink, width: 1.6),
       ),
     ),
     dividerTheme: const DividerThemeData(
@@ -105,18 +102,18 @@ class AppTheme {
     switchTheme: SwitchThemeData(
       thumbColor: WidgetStateProperty.resolveWith(
         (states) => states.contains(WidgetState.selected)
-            ? AppColors.roseGold
+            ? AppColors.ink
             : Colors.white,
       ),
       trackColor: WidgetStateProperty.resolveWith(
         (states) => states.contains(WidgetState.selected)
-            ? AppColors.roseGoldLight
+            ? AppColors.inkMuted
             : AppColors.borderLight,
       ),
     ),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       backgroundColor: AppColors.surfaceLight,
-      selectedItemColor: AppColors.roseGold,
+      selectedItemColor: AppColors.ink,
       unselectedItemColor: AppColors.textSecondaryLight,
       type: BottomNavigationBarType.fixed,
       showUnselectedLabels: true,
@@ -129,7 +126,7 @@ class AppTheme {
     brightness: Brightness.dark,
     scaffoldBackgroundColor: AppColors.backgroundDark,
     colorScheme: const ColorScheme.dark(
-      primary: AppColors.roseGoldLight,
+      primary: AppColors.gold,
       secondary: AppColors.gold,
       surface: AppColors.surfaceDark,
       error: AppColors.error,
@@ -154,12 +151,12 @@ class AppTheme {
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.roseGoldLight,
-        foregroundColor: AppColors.textPrimaryLight,
+        backgroundColor: AppColors.gold,
+        foregroundColor: AppColors.ink,
         padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 28),
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(radiusMedium)),
-        textStyle: AppTextStyles.dark.labelLarge,
+        shape: const StadiumBorder(),
+        textStyle: AppTextStyles.dark.labelLarge
+            ?.copyWith(letterSpacing: 0.6, fontWeight: FontWeight.w700),
         elevation: 0,
       ),
     ),
@@ -168,10 +165,13 @@ class AppTheme {
         foregroundColor: AppColors.textPrimaryDark,
         side: const BorderSide(color: AppColors.borderDark, width: 1.4),
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(radiusMedium)),
-        textStyle: AppTextStyles.dark.labelLarge,
+        shape: const StadiumBorder(),
+        textStyle: AppTextStyles.dark.labelLarge
+            ?.copyWith(letterSpacing: 0.6, fontWeight: FontWeight.w700),
       ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(foregroundColor: AppColors.gold),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
@@ -187,15 +187,14 @@ class AppTheme {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(radiusMedium),
-        borderSide:
-            const BorderSide(color: AppColors.roseGoldLight, width: 1.6),
+        borderSide: const BorderSide(color: AppColors.gold, width: 1.6),
       ),
     ),
     dividerTheme: const DividerThemeData(
         color: AppColors.borderDark, thickness: 1, space: 32),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       backgroundColor: AppColors.surfaceDark,
-      selectedItemColor: AppColors.roseGoldLight,
+      selectedItemColor: AppColors.gold,
       unselectedItemColor: AppColors.textSecondaryDark,
       type: BottomNavigationBarType.fixed,
       showUnselectedLabels: true,

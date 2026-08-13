@@ -19,6 +19,29 @@ class AppTextStyles {
         fontSize: size, fontWeight: weight, color: color, height: 1.45);
   }
 
+  /// Small uppercase, letter-spaced micro-label — "FOR AARI EMBROIDERY ARTIST HUB STUDENTS",
+  /// "STEP 01" — used above headings and on step/eyebrow cards throughout the marketing-style
+  /// screens (Home, auth headers).
+  static TextStyle eyebrow({Color color = AppColors.antiqueGold}) {
+    return GoogleFonts.manrope(
+      fontSize: 12,
+      fontWeight: FontWeight.w700,
+      letterSpacing: 1.6,
+      color: color,
+    );
+  }
+
+  /// Italic serif accent for inline emphasis inside a display heading — e.g. the "Color Match"
+  /// in "Aari Embroidery *Color Match* Expert". Pass the same size as the surrounding text.
+  static TextStyle accentItalic(double size, {Color color = AppColors.gold}) {
+    return GoogleFonts.playfairDisplay(
+      fontSize: size,
+      fontWeight: FontWeight.w600,
+      fontStyle: FontStyle.italic,
+      color: color,
+    );
+  }
+
   static TextTheme light = TextTheme(
     displayLarge: _display(40,
         weight: FontWeight.w700, color: AppColors.textPrimaryLight),

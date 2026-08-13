@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_theme.dart';
 
 enum LuxuryButtonVariant { primary, outline, gold }
 
-/// The app's signature call-to-action button: rose-gold gradient fill, pill corners, loading state.
+/// The app's signature call-to-action button: solid-ink pill fill, uppercase tracked label,
+/// loading state — matches the brand's editorial marketing-site button style.
 class LuxuryButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
@@ -32,25 +32,30 @@ class LuxuryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final disabled = onPressed == null || isLoading;
+    final labelColor = variant == LuxuryButtonVariant.outline
+        ? AppColors.ink
+        : (variant == LuxuryButtonVariant.gold ? AppColors.ink : Colors.white);
     final content = Row(
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         if (isLoading)
-          const SizedBox(
+          SizedBox(
             height: 18,
             width: 18,
-            child: CircularProgressIndicator(
-                strokeWidth: 2.2, color: Colors.white),
+            child: CircularProgressIndicator(strokeWidth: 2.2, color: labelColor),
           )
         else ...[
-          if (icon != null) ...[Icon(icon, size: 19), const SizedBox(width: 8)],
-          Text(label,
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: variant == LuxuryButtonVariant.outline
-                        ? Theme.of(context).textTheme.bodyLarge?.color
-                        : Colors.white,
-                  )),
+          if (icon != null) ...[Icon(icon, size: 18, color: labelColor), const SizedBox(width: 8)],
+          Text(
+            label.toUpperCase(),
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: labelColor,
+                  letterSpacing: 1.1,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
+          ),
         ],
       ],
     );
@@ -63,25 +68,20 @@ class LuxuryButton extends StatelessWidget {
       );
     }
 
-    final gradient = color != null
-        ? null
-        : (variant == LuxuryButtonVariant.gold
-            ? AppColors.goldGradient
-            : AppColors.roseGoldGradient);
-    final shadowColor = color ?? AppColors.roseGold;
+    final fillColor =
+        color ?? (variant == LuxuryButtonVariant.gold ? AppColors.gold : AppColors.ink);
 
     return SizedBox(
       width: fullWidth ? double.infinity : null,
       child: Opacity(
-        opacity: disabled && !isLoading ? 0.55 : 1,
+        opacity: disabled && !isLoading ? 0.5 : 1,
         child: DecoratedBox(
           decoration: BoxDecoration(
-            gradient: gradient,
-            color: color,
-            borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+            color: fillColor,
+            borderRadius: BorderRadius.circular(999),
             boxShadow: [
               BoxShadow(
-                  color: shadowColor.withValues(alpha: 0.25),
+                  color: fillColor.withValues(alpha: 0.18),
                   blurRadius: 16,
                   offset: const Offset(0, 6)),
             ],
@@ -89,7 +89,7 @@ class LuxuryButton extends StatelessWidget {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+              borderRadius: BorderRadius.circular(999),
               onTap: disabled ? null : onPressed,
               child: Padding(
                 padding:

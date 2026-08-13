@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-/// Luxury fashion colour palette: warm white base, gold + rose-gold accents.
+/// Editorial luxury colour palette: warm ivory base, near-black "ink" primary, muted gold accent —
+/// the same restrained espresso/cream/gold language as the brand's marketing site (Aurelia Aari).
 class AppColors {
   AppColors._();
 
@@ -13,11 +14,17 @@ class AppColors {
   static const Color ivory = Color(0xFFFFFDF8);
   static const Color champagne = Color(0xFFF6EEE0);
 
+  /// Near-black warm espresso — the primary brand/interactive colour (buttons, wordmark,
+  /// headings), replacing rose-gold as the app's dominant accent for a more editorial,
+  /// less "pink" feel.
+  static const Color ink = Color(0xFF241B16);
+  static const Color inkMuted = Color(0xFF4A3C33);
+
   // Light theme surfaces
-  static const Color backgroundLight = Color(0xFFFFFDF9);
+  static const Color backgroundLight = Color(0xFFFAF7F1);
   static const Color surfaceLight = Color(0xFFFFFFFF);
-  static const Color cardLight = Color(0xFFFFFBF4);
-  static const Color borderLight = Color(0xFFEFE3D0);
+  static const Color cardLight = Color(0xFFFFFFFF);
+  static const Color borderLight = Color(0xFFEAE3D6);
 
   // Dark theme surfaces
   static const Color backgroundDark = Color(0xFF15100E);
