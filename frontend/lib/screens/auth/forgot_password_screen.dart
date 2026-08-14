@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/app_constants.dart';
+import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
 import '../../state/auth_provider.dart';
 import '../../widgets/common/auth_header.dart';
@@ -39,8 +40,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         .sendPasswordReset(_emailController.text.trim());
     final state = ref.read(authControllerProvider);
     if (state.hasError && mounted) {
-      setState(() => _errorMessage =
-          state.error.toString().replaceFirst('Exception: ', ''));
+      setState(() => _errorMessage = readableApiError(state.error as Object));
     } else if (mounted) {
       setState(() => _sent = true);
     }

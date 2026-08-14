@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/constants/app_constants.dart';
+import '../core/network/api_client.dart';
 import '../models/bead_recommendation.dart';
 import '../models/design_model.dart';
 import '../models/order_details.dart';
@@ -165,7 +166,7 @@ class DesignFlowController extends StateNotifier<DesignFlowState> {
       state = state.copyWith(
           isUploadingEmbroidery: false, embroideryDesignUrl: result.url);
     } catch (e) {
-      state = state.copyWith(isUploadingEmbroidery: false, error: e.toString());
+      state = state.copyWith(isUploadingEmbroidery: false, error: readableApiError(e));
     }
   }
 
@@ -182,7 +183,7 @@ class DesignFlowController extends StateNotifier<DesignFlowState> {
       state =
           state.copyWith(isUploadingSaree: false, sareeImageUrl: result.url);
     } catch (e) {
-      state = state.copyWith(isUploadingSaree: false, error: e.toString());
+      state = state.copyWith(isUploadingSaree: false, error: readableApiError(e));
     }
   }
 
@@ -207,7 +208,7 @@ class DesignFlowController extends StateNotifier<DesignFlowState> {
       state =
           state.copyWith(isUploadingBlouse: false, blouseImageUrl: result.url);
     } catch (e) {
-      state = state.copyWith(isUploadingBlouse: false, error: e.toString());
+      state = state.copyWith(isUploadingBlouse: false, error: readableApiError(e));
     }
   }
 
@@ -253,7 +254,7 @@ class DesignFlowController extends StateNotifier<DesignFlowState> {
         selectedPaletteIndex: 0,
       );
     } catch (e) {
-      state = state.copyWith(isAnalyzing: false, error: e.toString());
+      state = state.copyWith(isAnalyzing: false, error: readableApiError(e));
     }
   }
 
@@ -283,7 +284,7 @@ class DesignFlowController extends StateNotifier<DesignFlowState> {
       );
       state = state.copyWith(isGenerating: false, result: design);
     } catch (e) {
-      state = state.copyWith(isGenerating: false, error: e.toString());
+      state = state.copyWith(isGenerating: false, error: readableApiError(e));
     }
   }
 
@@ -316,7 +317,7 @@ class DesignFlowController extends StateNotifier<DesignFlowState> {
       );
       state = state.copyWith(isGenerating: false, result: design);
     } catch (e) {
-      state = state.copyWith(isGenerating: false, error: e.toString());
+      state = state.copyWith(isGenerating: false, error: readableApiError(e));
     }
   }
 
@@ -330,7 +331,7 @@ class DesignFlowController extends StateNotifier<DesignFlowState> {
       final design = await _api.regenerate(currentResult.id, lookStyle);
       state = state.copyWith(isGenerating: false, result: design);
     } catch (e) {
-      state = state.copyWith(isGenerating: false, error: e.toString());
+      state = state.copyWith(isGenerating: false, error: readableApiError(e));
     }
   }
 

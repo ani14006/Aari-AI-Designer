@@ -107,7 +107,16 @@ async def _resolve_image_part(url: Optional[str], hex_color: Optional[str]) -> O
     return None
 
 
-_MAX_ANALYSIS_ATTEMPTS = 3
+# Gemini's own 503 error message describes overload spikes as "usually temporary" — 3 attempts
+# with a thin 2s/4s backoff gave real temporary spikes too little room to clear before the user
+# saw a hard failure. 5 attempts with capped exponential backoff (2/4/8/10/10s, ~34s total)
+# trades a longer worst-case wait for meaningfully better odds of riding out a spike.
+_MAX_ANALYSIS_ATTEMPTS = 5
+_MAX_BACKOFF_SECONDS = 10
+
+
+def _backoff_seconds(attempt: int) -> float:
+    return min(2 ** (attempt + 1), _MAX_BACKOFF_SECONDS)
 
 
 async def analyze_colors(
@@ -203,7 +212,7 @@ async def analyze_colors(
         except Exception as exc:
             last_error = exc
             if attempt < _MAX_ANALYSIS_ATTEMPTS - 1:
-                await asyncio.sleep(2 * (attempt + 1))
+                await asyncio.sleep(_backoff_seconds(attempt))
 
     raise AIServiceError(f"Colour analysis failed after {_MAX_ANALYSIS_ATTEMPTS} attempts: {last_error}")
 
@@ -283,7 +292,7 @@ async def analyze_garment(
         except Exception as exc:
             last_error = exc
             if attempt < _MAX_ANALYSIS_ATTEMPTS - 1:
-                await asyncio.sleep(2 * (attempt + 1))
+                await asyncio.sleep(_backoff_seconds(attempt))
 
     raise AIServiceError(f"Garment analysis failed after {_MAX_ANALYSIS_ATTEMPTS} attempts: {last_error}")
 
@@ -353,6 +362,6 @@ async def score_visualization(reference_bytes: bytes, generated_bytes: bytes) ->
         except Exception as exc:
             last_error = exc
             if attempt < _MAX_ANALYSIS_ATTEMPTS - 1:
-                await asyncio.sleep(2 * (attempt + 1))
+                await asyncio.sleep(_backoff_seconds(attempt))
 
     raise AIServiceError(f"QA scoring failed after {_MAX_ANALYSIS_ATTEMPTS} attempts: {last_error}")

@@ -42,7 +42,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         _emailController.text.trim(), _passwordController.text);
     final state = ref.read(authControllerProvider);
     if (state.hasError && mounted) {
-      setState(() => _errorMessage = _readableError(state.error));
+      setState(() => _errorMessage = readableApiError(state.error as Object));
     }
   }
 
@@ -51,14 +51,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     await ref.read(authControllerProvider.notifier).signInWithGoogle();
     final state = ref.read(authControllerProvider);
     if (state.hasError && mounted) {
-      setState(() => _errorMessage = _readableError(state.error));
+      setState(() => _errorMessage = readableApiError(state.error as Object));
     }
-  }
-
-  String _readableError(Object? error) {
-    if (error is ApiException) return error.message;
-    return error?.toString().replaceFirst('Exception: ', '') ??
-        'Something went wrong.';
   }
 
   @override

@@ -67,3 +67,22 @@ class ApiException implements Exception {
   @override
   String toString() => message;
 }
+
+/// Extracts a clean, user-facing message from any error caught around an API call.
+///
+/// The onError interceptor above always converts failures to an [ApiException], but Dio's own
+/// contract means whatever propagates out of a request is still a [DioException] — the
+/// [ApiException] only rides along inside its `.error` field ([ApiException.toDioError]).
+/// Calling `.toString()` directly on that caught exception (as every screen used to) prints
+/// Dio's own verbose diagnostic text ("This exception was thrown because...") instead of the
+/// intended message — this unwraps it correctly. Use this everywhere an error caught from an
+/// API call is shown to the user.
+String readableApiError(Object error) {
+  if (error is ApiException) return error.message;
+  if (error is DioException) {
+    final inner = error.error;
+    if (inner is ApiException) return inner.message;
+    return error.message ?? 'Something went wrong. Please try again.';
+  }
+  return error.toString().replaceFirst('Exception: ', '');
+}
