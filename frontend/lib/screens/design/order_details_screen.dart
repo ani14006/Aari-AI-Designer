@@ -8,6 +8,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/utils/responsive.dart';
 import '../../models/order_details.dart';
 import '../../state/design_provider.dart';
+import '../../widgets/common/buffer_screen.dart';
 import '../../widgets/common/luxury_button.dart';
 import '../../widgets/common/responsive_page.dart';
 
@@ -154,6 +155,8 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
   Widget build(BuildContext context) {
     final isAnalyzing =
         ref.watch(designFlowProvider.select((s) => s.isAnalyzing));
+    if (isAnalyzing) return const BufferScreen();
+
     final width = MediaQuery.sizeOf(context).width;
     final hPad = ResponsiveUtils.horizontalPadding(width);
 
@@ -215,10 +218,9 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                 ),
               ),
               LuxuryButton(
-                label: isAnalyzing ? 'Analysing Colours...' : 'Analyse Colours',
+                label: 'Analyse Colours',
                 icon: Icons.auto_awesome_rounded,
-                isLoading: isAnalyzing,
-                onPressed: isAnalyzing ? null : _handleContinue,
+                onPressed: _handleContinue,
               ),
             ],
           ),

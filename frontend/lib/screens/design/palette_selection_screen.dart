@@ -5,9 +5,17 @@ import 'package:go_router/go_router.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/utils/responsive.dart';
 import '../../state/design_provider.dart';
+import '../../widgets/common/buffer_screen.dart';
 import '../../widgets/common/luxury_button.dart';
 import '../../widgets/common/responsive_page.dart';
 import '../../widgets/design/palette_option_card.dart';
+
+const _previewRenderMessages = [
+  'Draping the silk…',
+  'Weaving the border…',
+  'Catching the light…',
+  'Nearly there…',
+];
 
 /// Shows the 3 AI-generated bead-colour palettes (Complementary / Analogous / Triadic) for the
 /// user to pick from before the photorealistic preview is generated.
@@ -74,6 +82,13 @@ class PaletteSelectionScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(designFlowProvider);
+    if (state.isGenerating) {
+      return const BufferScreen(
+        messages: _previewRenderMessages,
+        subcopy: 'Generating your photorealistic preview',
+      );
+    }
+
     final width = MediaQuery.sizeOf(context).width;
     final isWide = ResponsiveUtils.isTabletOrWider(width);
     final hPad = ResponsiveUtils.horizontalPadding(width);
@@ -102,14 +117,9 @@ class PaletteSelectionScreen extends ConsumerWidget {
                     : Expanded(child: _palettesList(context, ref, state)),
                 const SizedBox(height: 16),
                 LuxuryButton(
-                  label: state.isGenerating
-                      ? 'Generating Preview...'
-                      : 'Generate Preview',
+                  label: 'Generate Preview',
                   icon: Icons.auto_awesome_rounded,
-                  isLoading: state.isGenerating,
-                  onPressed: state.isGenerating
-                      ? null
-                      : () => _handleGenerate(context, ref),
+                  onPressed: () => _handleGenerate(context, ref),
                 ),
               ],
             ),
