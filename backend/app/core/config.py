@@ -48,7 +48,10 @@ class Settings(BaseSettings):
 
     # Visualization pipeline (images.edit(), reference-image-faithful rendering)
     OPENAI_EDIT_MODEL: str = "gpt-image-1"
-    OPENAI_EDIT_QUALITY: str = "high"
+    # "high" was the biggest single latency cost in the whole generation pipeline (and doubles
+    # on the automatic retry when the first attempt's QA score falls short) — "medium" trades
+    # some crispness for meaningfully faster generation. Kept configurable via env.
+    OPENAI_EDIT_QUALITY: str = "medium"
     VISUALIZATION_QA_ACCEPT_THRESHOLD: float = 70.0
 
     # "View on Mannequin" — separate optional presentation stage, tunable independently of the

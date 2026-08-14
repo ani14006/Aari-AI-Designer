@@ -5,12 +5,14 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.concurrency import run_in_threadpool
 
 from app.api.v1.router import api_router
 from app.core.config import settings
 from app.core.logging import configure_logging
 from app.db.base import init_models
 from app.utils.exceptions import AariDesignerError
+from app.utils.image_utils import warm_rembg_model
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +24,10 @@ async def lifespan(_app: FastAPI):
     # schema in every environment, including production. It's idempotent (only creates tables
     # that don't already exist), so this is safe to run on every startup.
     await init_models()
+    # Loads the background-removal model now instead of on whoever's request happens to be
+    # first after a restart — that first user was otherwise paying for model load time on top
+    # of the actual generation pipeline.
+    await run_in_threadpool(warm_rembg_model)
     logger.info("%s started (environment=%s)", settings.APP_NAME, settings.ENVIRONMENT)
     yield
 

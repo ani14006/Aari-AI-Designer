@@ -92,6 +92,13 @@ def _get_rembg_session():
     return new_session("u2net")
 
 
+def warm_rembg_model() -> None:
+    """Loads the background-removal model now rather than on whoever's request happens to be
+    first after a restart. Call once from the app's startup lifespan — safe to call repeatedly,
+    _get_rembg_session's lru_cache makes every call after the first a no-op."""
+    _get_rembg_session()
+
+
 def remove_background(image_bytes: bytes) -> bytes:
     """Strip the background from an uploaded embroidery photo, producing the canonical
     transparent embroidery_asset.png that every downstream pipeline stage uses instead of the
