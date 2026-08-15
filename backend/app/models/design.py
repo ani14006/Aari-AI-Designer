@@ -2,7 +2,7 @@
 import uuid
 from typing import Any, Optional
 
-from sqlalchemy import JSON, Float, ForeignKey, Integer, String, Boolean
+from sqlalchemy import JSON, Float, ForeignKey, Integer, String, Text, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin
@@ -47,7 +47,12 @@ class Design(Base, TimestampMixin):
     # Generation
     look_style: Mapped[str] = mapped_column(String(64), default="Luxury Look")
     preview_image_url: Mapped[str] = mapped_column(String(1024), default="")
-    generation_prompt: Mapped[str] = mapped_column(String(4096), default="")
+    # Text, not a bounded VARCHAR — the actual prompt _build_visualization_prompt() builds runs
+    # well past 4096 characters (it was originally String(4096); every completed generation's
+    # final save was silently failing against Postgres with a StringDataRightTruncationError,
+    # discarding a successfully generated image because this one column couldn't hold its own
+    # prompt). This is debugging/reproducibility data, not something that benefits from a cap.
+    generation_prompt: Mapped[str] = mapped_column(Text, default="")
 
     # Shopping list
     shopping_list: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list)
@@ -73,7 +78,9 @@ class Design(Base, TimestampMixin):
     # every design created via the old synchronous /preview flow, since those never go through
     # the pending/processing states at all.
     status: Mapped[str] = mapped_column(String(16), default="completed")
-    error_message: Mapped[Optional[str]] = mapped_column(String(2048), nullable=True, default=None)
+    # Same reasoning as generation_prompt above — error text (e.g. a full AI-provider error
+    # payload) is variable-length diagnostic content, not something with a natural hard cap.
+    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True, default=None)
 
     owner: Mapped["User"] = relationship(back_populates="designs")
 
