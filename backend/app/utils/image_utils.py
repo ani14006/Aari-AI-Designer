@@ -5,6 +5,7 @@ from functools import lru_cache
 
 import httpx
 from PIL import Image, ImageOps
+from starlette.concurrency import run_in_threadpool
 
 
 async def fetch_image_bytes(url: str) -> bytes:
@@ -99,10 +100,16 @@ def warm_rembg_model() -> None:
     _get_rembg_session()
 
 
-def remove_background(image_bytes: bytes) -> bytes:
+async def remove_background(image_bytes: bytes) -> bytes:
     """Strip the background from an uploaded embroidery photo, producing the canonical
     transparent embroidery_asset.png that every downstream pipeline stage uses instead of the
-    raw upload. Model weights are downloaded once on first call and cached on disk."""
+    raw upload. Model weights are downloaded once on first call and cached on disk.
+
+    The actual inference is synchronous, CPU-bound ONNX work — several seconds on a modest CPU
+    tier. Run directly (without this threadpool offload), it blocks the single worker's entire
+    event loop for that whole duration, freezing every other in-flight request on the process,
+    including this same job's own status-polling requests from the frontend. That's a much
+    bigger contributor to "generation feels stuck" than the model's own compute time."""
     from rembg import remove
 
-    return remove(image_bytes, session=_get_rembg_session())
+    return await run_in_threadpool(remove, image_bytes, session=_get_rembg_session())

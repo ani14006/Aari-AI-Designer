@@ -58,7 +58,7 @@ def _patch_common_stages(monkeypatch):
     def fake_normalize(data, max_dimension=2048):
         return data
 
-    def fake_remove_background(data):
+    async def fake_remove_background(data):
         return _tiny_rgba_png()
 
     def fake_fit_to_edit_canvas(data):

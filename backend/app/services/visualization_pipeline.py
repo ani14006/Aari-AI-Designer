@@ -24,7 +24,7 @@ async def run_visualization(job: VisualizationJob) -> VisualizationJob:
     blouse_normalized = normalize_image(blouse_raw)
     embroidery_normalized = normalize_image(embroidery_raw)
 
-    job.embroidery_asset_bytes = remove_background(embroidery_normalized)
+    job.embroidery_asset_bytes = await remove_background(embroidery_normalized)
 
     canvas_bytes, canvas_size_str, _, _ = fit_to_edit_canvas(blouse_normalized)
     job.blouse_bytes = canvas_bytes
