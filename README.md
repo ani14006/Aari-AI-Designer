@@ -1,9 +1,58 @@
 # Aari AI Designer
 
-Premium AI-powered web app that lets women visualize Aari embroidery on a saree + blouse before
-a single stitch is made — upload an embroidery reference, a saree, and a blouse, and get a
-photorealistic boutique product photograph (the outfit shown worn on a display mannequin) with
-AI-recommended bead colours and a ready-to-buy materials list.
+**See your embroidery on the actual saree and blouse — before a single stitch is made.**
+
+Upload a reference embroidery design, a saree, and a blouse. Aari AI Designer analyses the
+colours, recommends bead palettes with real design reasoning, and generates a photorealistic
+boutique product photograph of the finished outfit — worn on a display mannequin — faithful to
+the exact embroidery you uploaded, not a reinterpretation of it. It closes with an itemised,
+budget-aware materials shopping list ready to send a customer over WhatsApp.
+
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-aari--ai--designer-C9A24B?style=for-the-badge)](https://aari-ai-designer-frontend.onrender.com)
+&nbsp;
+![Flutter](https://img.shields.io/badge/Flutter-Web-02569B?logo=flutter&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-Python-009688?logo=fastapi&logoColor=white)
+![Gemini](https://img.shields.io/badge/Vision%20%2B%20QA-Gemini-4285F4?logo=googlegemini&logoColor=white)
+![OpenAI](https://img.shields.io/badge/Image%20Generation-gpt--image--1-000000?logo=openai&logoColor=white)
+![Supabase](https://img.shields.io/badge/Auth-Supabase-3ECF8E?logo=supabase&logoColor=white)
+![Tests](https://img.shields.io/badge/backend%20tests-31%20passing-2E8B57)
+
+---
+
+## Contents
+
+- [What it does](#what-it-does)
+- [Architecture](#architecture)
+- [Feature → implementation map](#feature--implementation-map)
+- [Engineering notes](#engineering-notes)
+- [Getting started](#prerequisites)
+- [Deployment](#deployment)
+- [Tech stack](#tech-stack)
+- [License](#license)
+
+## What it does
+
+Aari embroidery — intricate hand-stitched beadwork on saree blouses — is traditionally sold on
+faith: a customer picks a design from a photo of *someone else's* blouse and hopes it looks right
+on their own fabric. Aari AI Designer replaces that guess with a real preview.
+
+- **Upload** an embroidery reference (photo or PDF), a saree, and a blouse — by camera, gallery,
+  or a manual colour swatch if a physical sample isn't on hand yet.
+- **AI colour analysis** (Gemini) reads the actual fabrics and proposes three bead palettes —
+  complementary, analogous, triadic — each with genuine colour-theory reasoning, not a generic
+  guess.
+- **Photorealistic generation** (OpenAI `gpt-image-1`) composes the chosen embroidery directly
+  onto the uploaded blouse and saree as a styled boutique product photograph on a display
+  mannequin. The reference photos are the source of truth throughout — the model is instructed
+  to render *this* embroidery, not invent a similar-looking one.
+- **AI quality scoring** (Gemini again, in a different role) scores each generated image against
+  the original reference for fidelity; if the first attempt scores too low, the pipeline
+  automatically retries once and keeps whichever attempt scored higher.
+- **Shopping list**, sized to the blouse and budget, with per-material cost estimates and a
+  ready-to-send WhatsApp message.
+- **Look styles** (Luxury, Traditional, Minimal, Bridal, Temple, Modern) and **"View on
+  Mannequin"** re-presentation are available on any completed design without redoing the whole
+  pipeline.
 
 ## Architecture
 
@@ -56,10 +105,33 @@ already-completed visualization on a display mannequin.
 | History | `backend/app/api/v1/endpoints/designs.py`, `frontend/lib/screens/history/history_screen.dart` |
 | Settings (dark mode, language, notifications, profile) | `frontend/lib/screens/settings/settings_screen.dart` |
 
+## Engineering notes
+
+A few decisions worth calling out, since they weren't obvious going in:
+
+- **The generation pipeline runs as a background task, not a synchronous request.** A full
+  visualization — background removal, garment analysis, image generation, QA scoring, and up to
+  one automatic retry — can take 1–5 minutes end to end, which reliably exceeds most hosting
+  platforms' reverse-proxy timeouts if held open on a single request. `POST /generation/visualize`
+  returns immediately with a `processing` status; the frontend polls `GET /designs/{id}` until
+  it resolves.
+- **Reference-image fidelity over generative freedom.** Early iterations let the model "interpret"
+  the embroidery from a text description, which drifted from the actual uploaded design. The
+  pipeline now sends the real reference photos directly to `gpt-image-1`'s edit endpoint with
+  explicit instructions to preserve pattern, colour, and bead placement — Gemini's role is
+  analysis and scoring, never generation.
+- **Blocking work is kept off the event loop.** Background removal is genuine CPU-bound ML
+  inference; running it directly inside an `async def` request handler blocks the entire
+  single-worker process for its full duration, freezing every other in-flight request — including
+  the same job's own status-polling calls. It runs via a thread-pool offload instead.
+- **No Alembic migrations yet** — `create_all()` provisions schema in every environment on
+  startup, and a small additive-only startup step backfills any column a model has gained (or
+  widened) since a table was first created. It only ever adds or widens, never narrows or drops;
+  a real migration tool is the obvious next step once schema changes get more involved than that.
+
 ## Prerequisites
 
-- Python 3.9 (pinned in `backend/runtime.txt` / `backend/.python-version` — this is what the
-  project is tested against; newer 3.x will very likely work but hasn't been verified here)
+- Python 3.12 (pinned in `backend/runtime.txt` / `backend/.python-version`)
 - Flutter SDK (stable channel) with web support enabled
 - Accounts/API keys for: [Supabase](https://supabase.com), [Cloudinary](https://cloudinary.com),
   [Google AI Studio](https://aistudio.google.com) (Gemini), [OpenAI](https://platform.openai.com)
@@ -85,7 +157,7 @@ uvicorn app.main:app --reload
 API docs are served at `http://localhost:8000/docs` once running, and a health check at
 `http://localhost:8000/health`.
 
-Run the test suite (30 tests, no real external services required — Supabase JWT verification is
+Run the test suite (31 tests, no real external services required — Supabase JWT verification is
 exercised with a self-signed token, and OpenAI/Gemini/Cloudinary calls are mocked):
 
 ```bash
@@ -199,6 +271,10 @@ wiped on every redeploy/restart.
    Flutter web bakes these in at build, not runtime).
 3. Once both services have URLs, set the backend's `CORS_ORIGINS` to the frontend's actual URL
    and redeploy the backend.
+4. Pick an instance size deliberately, not just "free vs paid" — this pipeline runs real ML
+   inference (background removal) alongside multiple in-memory image buffers per request. 512MB
+   RAM tiers (including Render's "Starter") are tight for this workload under real usage; 2GB
+   ("Standard") is a more realistic floor for production traffic.
 
 ### Railway
 
@@ -224,6 +300,15 @@ unrelated platforms simply ignore.
 
 ## Tech stack
 
-Flutter (web) · FastAPI · SQLAlchemy (async) · SQLite (dev) / PostgreSQL (prod) · Supabase Auth
-· Cloudinary · Google Gemini (vision analysis + QA scoring) · OpenAI `gpt-image-1` (image
-generation) · Riverpod · go_router · nginx (frontend container)
+**Frontend** — Flutter (web), Riverpod, go_router, nginx (production container)
+**Backend** — FastAPI, SQLAlchemy (async), Pydantic, Uvicorn
+**Data** — PostgreSQL (production) / SQLite (dev), Supabase (auth), Cloudinary (media storage)
+**AI** — Google Gemini (vision analysis + QA scoring), OpenAI `gpt-image-1` (image generation)
+
+## License
+
+© 2026 Anish Karthick. All rights reserved.
+
+This repository is public for portfolio and demonstration purposes. No license is granted to
+use, copy, modify, or distribute this code, in whole or in part, without explicit written
+permission.
